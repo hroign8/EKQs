@@ -1,0 +1,42 @@
+Required for email/password auth:
+
+BETTER_AUTH_SECRET — Generate one by running:
+DATABASE_URL — Your real PostgreSQL connection string
+Required for Google OAuth:
+
+GOOGLE_CLIENT_ID — From Google Cloud Console → Create OAuth 2.0 Client ID
+GOOGLE_CLIENT_SECRET — Same place
+Set the authorized redirect URI in Google Console to: http://localhost:3001/api/auth/callback/google
+
+Required for emails (verification, password reset):
+
+RESEND_API_KEY — From resend.com/api-keys
+Required for payments:
+
+PESAPAL_CONSUMER_KEY / PESAPAL_CONSUMER_SECRET — From your PesaPal dashboard
+Once you have the values, update your .env file with the real keys, then restart the dev server (npm run dev). Email/password sign-up needs at minimum DATABASE_URL and BETTER_AUTH_SECRET. Google OAuth additionally needs the Google credentials.
+
+
+Required steps after adding keys:
+
+  Create database tables: npx prisma db push
+
+Seed initial data (contestants, categories, event info): npm run db:seed
+
+Start the app: npm run dev
+
+Google Cloud Console — you must also add the redirect URhttp://localhost:3001/api/auth/callback/google
+
+
+
+
+Create a user via the better-auth sign-up API (so the password is properly hashed)
+Set the user's role to admin in the database
+Default credentials (customizable via env vars):
+
+Email: admin@ekq.com
+Password: Admin@2026!
+
+
+Custom credentials:
+ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=YourSecurePass123! npm run db:seed-admin

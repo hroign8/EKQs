@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Better Auth Core Tables ─────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          String    @default("user")
+  banned        Boolean   @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+
+  votes         Vote[]
+  tickets       TicketPurchase[]
+  contactMessages ContactMessage[]
+  notifications   Notification[]
+
+  @@map("user")
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  expiresAt      DateTime
+  token          String   @unique
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  impersonatedBy String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ─── Application Tables ──────────────────────────────────────
+
+model Contestant {
+  id          String   @id @default(cuid())
+  name        String
+  country     String
+  gender      String
+  image       String
+  description String
+  rank        Int?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  votes Vote[]
+
+  @@map("contestant")
+}
+
+model VotingCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  votes Vote[]
+
+  @@map("voting_category")
+}
+
+model VotingPackage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  votes     Int
+  price     Float
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  voteRecords Vote[]
+
+  @@map("voting_package")
+}
+
+model Vote {
+  id            String   @id @default(cuid())
+  contestantId  String
+  categoryId    String
+  userId        String
+  packageId     String
+  votesCount    Int      @default(1)
+  amountPaid    Float    @default(0)
+  transactionId String?
+  verified      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  contestant Contestant    @relation(fields: [contestantId], references: [id], onDelete: Cascade)
+  category   VotingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package    VotingPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([contestantId])
+  @@index([categoryId])
+  @@index([userId])
+  @@map("vote")
+}
+
+model Event {
+  id               String   @id @default(cuid())
+  name             String
+  tagline          String
+  startDate        String
+  endDate          String
+  votingStart      String
+  votingEnd        String
+  isActive         Boolean  @default(true)
+  votePrice        Float    @default(0.30)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("event")
+}
+
+model TicketType {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float
+  features  String[]
+  icon      String   @default("ticket")
+  popular   Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchases TicketPurchase[]
+
+  @@map("ticket_type")
+}
+
+model TicketPurchase {
+  id            String   @id @default(cuid())
+  userId        String
+  ticketTypeId  String
+  quantity      Int      @default(1)
+  totalAmount   Float
+  transactionId String?
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketType TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("ticket_purchase")
+}
+
+model PesapalTransaction {
+  id                    String   @id @default(cuid())
+  orderTrackingId       String   @unique
+  merchantReference     String   @unique
+  transactionType       String
+  amount                Float
+  currency              String   @default("USD")
+  description           String
+  status                String   @default("pending")
+  statusCode            String?
+  paymentMethod         String?
+  pesapalTransactionId  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([orderTrackingId])
+  @@index([merchantReference])
+  @@map("pesapal_transaction")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  email     String
+  subject   String?
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("contact_message")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // vote_confirmed, ticket_purchased, welcome, message_reply
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notification")
+}
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("subscriber")
+}

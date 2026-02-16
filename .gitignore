@@ -1,0 +1,17 @@
+node_modules
+# Keep environment variables out of version control
+.env
+.env.*
+
+# Next.js
+.next/
+out/
+
+# Prisma
+/app/generated/prisma
+
+# OS files
+.DS_Store
+
+# Misc
+pg_hba.conf.save

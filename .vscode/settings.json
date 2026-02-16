@@ -1,0 +1,6 @@
+{
+  "css.customData": [],
+  "css.lint.unknownAtRules": "ignore",
+  "snyk.advanced.autoSelectOrganization": true,
+  "snyk.advanced.organization": "7d51dd70-5894-4b78-b9fe-cabc196be693"
+}
