@@ -2,23 +2,12 @@
 
 import { Crown } from 'lucide-react'
 import Link from 'next/link'
-import Footer from '@/components/Footer'
+import PageHero from '@/components/PageHero'
 
 export default function ResultsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="bg-burgundy-900 py-8 sm:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="h-px w-12 bg-gold-500"></div>
-            <Crown className="w-6 h-6 text-gold-500" />
-            <div className="h-px w-12 bg-gold-500"></div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">Results</h1>
-          <p className="text-burgundy-200 text-base sm:text-lg max-w-xl mx-auto">View the current standings and results</p>
-        </div>
-      </div>
+      <PageHero title="Results" subtitle="View the current standings and results" />
 
       <div className="container mx-auto px-4 py-16">
         <div className="bg-white rounded-2xl border-2 border-gray-200 p-10 text-center max-w-lg mx-auto">
@@ -37,7 +26,6 @@ export default function ResultsPage() {
           </Link>
         </div>
       </div>
-      <Footer />
     </div>
   )
 }

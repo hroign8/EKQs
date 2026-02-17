@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Crown, Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react'
 import { signIn, useSession } from '@/lib/auth-client'
+import { isAdmin } from '@/types'
 import { useEffect } from 'react'
 
 export default function AdminLoginPage() {
@@ -18,7 +19,7 @@ export default function AdminLoginPage() {
   // If already logged in as admin, redirect to admin dashboard
   useEffect(() => {
     if (!sessionPending && session?.user) {
-      if ((session.user as { role?: string }).role === 'admin') {
+      if (isAdmin(session.user)) {
         router.replace('/admin')
       }
     }
@@ -66,7 +67,7 @@ export default function AdminLoginPage() {
     )
   }
 
-  if (session?.user && (session.user as { role?: string }).role === 'admin') {
+  if (session?.user && isAdmin(session.user)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-burgundy-900" />

@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { Ticket as TicketIcon, Check, Crown, Star, Users, Calendar, MapPin, Loader2 } from 'lucide-react';
 import { useSession } from '@/lib/auth-client';
 import { useEvent } from '@/lib/hooks';
-import Footer from '@/components/Footer';
 import Link from 'next/link';
+import { formatDateShort } from '@/lib/utils';
+import PageHero from '@/components/PageHero';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Ticket {
   id: string;
@@ -128,42 +130,12 @@ const TicketingPage: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-gold-500 mx-auto mb-4" />
-          <p className="text-gray-500">Loading tickets...</p>
-        </div>
-      </main>
-    );
+    return <LoadingSpinner message="Loading tickets..." />;
   }
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const [day, month, year] = dateStr.split('/').map(Number);
-      const date = new Date(year, month - 1, day);
-      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    } catch {
-      return dateStr;
-    }
-  };
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="bg-burgundy-900 py-8 sm:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="h-px w-12 bg-gold-500"></div>
-            <Crown className="w-6 h-6 text-gold-500" />
-            <div className="h-px w-12 bg-gold-500"></div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">Get Your Tickets</h1>
-          <p className="text-burgundy-200 text-base sm:text-lg max-w-xl mx-auto">
-            Join us for an unforgettable evening celebrating excellence, beauty, and talent
-          </p>
-        </div>
-      </div>
+      <PageHero title="Get Your Tickets" subtitle="Join us for an unforgettable evening celebrating excellence, beauty, and talent" />
 
       <div className="container mx-auto px-4 py-8 sm:py-12">
         {/* Event Info Bar */}
@@ -175,7 +147,7 @@ const TicketingPage: React.FC = () => {
               </div>
               <div>
                 <div className="text-xs text-gray-500 font-medium">Event Date</div>
-                <div className="font-bold text-burgundy-900">{eventData ? formatDate(eventData.startDate) : 'TBA'}</div>
+                <div className="font-bold text-burgundy-900">{eventData ? formatDateShort(eventData.startDate) : 'TBA'}</div>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -371,7 +343,6 @@ const TicketingPage: React.FC = () => {
         </div>
       </div>
 
-      <Footer />
     </main>
   );
 };

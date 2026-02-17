@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Mail, Phone, MapPin, Crown, Check, Clock, Loader2 } from 'lucide-react'
-import Footer from '@/components/Footer'
+import { Mail, Phone, MapPin, Check, Clock, Loader2 } from 'lucide-react'
+import PageHero from '@/components/PageHero'
 
 export default function ContactPage() {
   const [name, setName] = useState('')
@@ -57,20 +57,7 @@ export default function ContactPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="bg-burgundy-900 py-8 sm:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="h-px w-12 bg-gold-500"></div>
-            <Crown className="w-6 h-6 text-gold-500" />
-            <div className="h-px w-12 bg-gold-500"></div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">Contact Us</h1>
-          <p className="text-burgundy-200 text-base sm:text-lg max-w-xl mx-auto">
-            Have questions about the event? We'd love to hear from you
-          </p>
-        </div>
-      </div>
+      <PageHero title="Contact Us" subtitle="Have questions about the event? We'd love to hear from you" />
 
       {/* Contact Content */}
       <div className="container mx-auto px-4 py-12">
@@ -248,7 +235,6 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <Footer />
     </main>
   )
 }

@@ -18,6 +18,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
     }
 
+    // Validate parameter format (alphanumeric + hyphens only)
+    if (!/^[a-zA-Z0-9-]+$/.test(orderTrackingId)) {
+      return NextResponse.json({ error: 'Invalid tracking ID format' }, { status: 400 })
+    }
+
     // Get transaction status from PesaPal
     const status = await getTransactionStatus(orderTrackingId)
 
@@ -40,6 +45,16 @@ export async function GET(request: NextRequest) {
 
       if (!transaction) {
         return NextResponse.json({ error: 'Transaction not found' }, { status: 404 })
+      }
+
+      // Verify the paid amount matches the expected amount to prevent payment fraud
+      if (status.amount !== undefined && Number(status.amount) < transaction.amount) {
+        console.error('IPN amount mismatch', {
+          expected: transaction.amount,
+          received: status.amount,
+          orderTrackingId,
+        })
+        return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 })
       }
 
       if (transaction.transactionType === 'vote') {

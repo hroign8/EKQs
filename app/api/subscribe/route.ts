@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('subscribe', 5, 60_000) // 5 per minute
 
 const subscribeSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -12,6 +15,15 @@ const subscribeSchema = z.object({
  */
 export async function POST(request: Request) {
   try {
+    // Rate limit by IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const check = limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      )
+    }
     const body = await request.json()
     const parsed = subscribeSchema.safeParse(body)
 

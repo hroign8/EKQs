@@ -72,7 +72,7 @@ export type CategoryInput = z.infer<typeof categorySchema>
 // ─── Package Validation (Admin) ──────────────────────────────
 
 export const packageSchema = z.object({
-  slug: z.string().min(1).max(50),
+  slug: z.string().min(1).max(50).regex(/^[a-zA-Z][a-zA-Z0-9]*$/, 'Slug must be alphanumeric, starting with a letter'),
   name: z.string().min(1).max(100),
   votes: z.number().int().positive(),
   price: z.number().positive(),

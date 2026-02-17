@@ -35,8 +35,10 @@ export async function POST(request: NextRequest) {
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'avatars')
     await mkdir(uploadsDir, { recursive: true })
 
-    // Generate unique filename
-    const ext = file.name.split('.').pop() || 'jpg'
+    // Generate unique filename with validated extension
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif']
+    const rawExt = file.name.split('.').pop()?.toLowerCase() || ''
+    const ext = allowedExtensions.includes(rawExt) ? rawExt : 'jpg'
     const filename = `${session.user.id}-${Date.now()}.${ext}`
     const filepath = path.join(uploadsDir, filename)
 

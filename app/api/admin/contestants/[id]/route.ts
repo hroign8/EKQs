@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
-import { contestantSchema } from '@/lib/validations'
 
 /**
  * PUT /api/admin/contestants/[id]
@@ -17,20 +16,24 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const parsed = contestantSchema.partial().safeParse(body)
-
-    if (!parsed.success) {
-      return errorResponse(parsed.error.issues[0].message)
-    }
 
     const existing = await prisma.contestant.findUnique({ where: { id } })
     if (!existing) {
       return errorResponse('Contestant not found', 404)
     }
 
+    // Whitelist allowed fields
+    const allowedFields = ['name', 'country', 'gender', 'image', 'description', 'rank', 'isActive'] as const
+    const data: Record<string, unknown> = {}
+    for (const key of allowedFields) {
+      if (key in body) {
+        data[key] = body[key]
+      }
+    }
+
     const contestant = await prisma.contestant.update({
       where: { id },
-      data: parsed.data,
+      data,
     })
 
     return NextResponse.json(contestant)

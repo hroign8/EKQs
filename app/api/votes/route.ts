@@ -4,6 +4,9 @@ import { requireAuth, errorResponse } from '@/lib/api-utils'
 import { submitVoteSchema } from '@/lib/validations'
 import { submitOrder, registerIPN } from '@/lib/pesapal'
 import { randomUUID } from 'crypto'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('votes', 20, 60_000) // 20 per minute
 
 /**
  * POST /api/votes
@@ -14,6 +17,12 @@ export async function POST(request: Request) {
   try {
     const { session, error } = await requireAuth()
     if (error) return error
+
+    // Rate limit by user ID
+    const check = limiter.check(session!.user.id)
+    if (!check.allowed) {
+      return errorResponse('Too many vote attempts. Please wait a moment.')
+    }
 
     const body = await request.json()
     const parsed = submitVoteSchema.safeParse(body)
@@ -45,6 +54,19 @@ export async function POST(request: Request) {
     const event = await prisma.event.findFirst({ where: { isActive: true } })
     if (!event) {
       return errorResponse('No active event found')
+    }
+
+    // Enforce voting period (dates are DD/MM/YYYY format)
+    const now = new Date()
+    const parseDate = (d: string) => {
+      const [day, month, year] = d.split('/').map(Number)
+      return new Date(year, month - 1, day)
+    }
+    const votingStart = parseDate(event.votingStart)
+    const votingEnd = parseDate(event.votingEnd)
+    votingEnd.setHours(23, 59, 59, 999) // Include the entire end day
+    if (now < votingStart || now > votingEnd) {
+      return errorResponse('Voting is not currently open')
     }
 
     const merchantReference = `VOTE-${randomUUID().slice(0, 8).toUpperCase()}`

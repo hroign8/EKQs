@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Crown, Menu, X, Search, LogOut, User, ChevronDown, Settings, LayoutDashboard, Bell, Check } from 'lucide-react'
+import { Menu, X, Search, LogOut, User, ChevronDown, Settings, LayoutDashboard, Bell, Check } from 'lucide-react'
 import { useSession, signOut } from '@/lib/auth-client'
 
 type Notification = {
@@ -230,9 +230,13 @@ export default function Navigation() {
         <div className="flex items-center justify-between h-16 gap-3">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
-            <div className="flex items-center justify-center w-10 h-10 bg-gold-400 rounded-full group-hover:bg-gold-500 transition-colors duration-200">
-              <Crown className="w-5 h-5 text-burgundy-900" />
-            </div>
+            <Image
+              src="/kings and queenz logo.svg"
+              alt="EKQs Logo"
+              width={40}
+              height={40}
+              className="rounded-full group-hover:opacity-90 transition-opacity duration-200"
+            />
             <span className="text-lg font-semibold text-white hidden sm:block">
               EKQ<span className="text-gold-400">s</span>
             </span>
@@ -268,7 +272,7 @@ export default function Navigation() {
                           className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition-colors"
                         >
                           <Image
-                            src={contestant.image || '/placeholder-avatar.png'}
+                            src={contestant.image || '/uploads/contestants/placeholder.svg'}
                             alt={contestant.name}
                             width={32}
                             height={32}
@@ -341,7 +345,7 @@ export default function Navigation() {
                           className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition-colors"
                         >
                           <Image
-                            src={contestant.image || '/placeholder-avatar.png'}
+                            src={contestant.image || '/uploads/contestants/placeholder.svg'}
                             alt={contestant.name}
                             width={36}
                             height={36}

@@ -1,8 +1,8 @@
 'use client'
 
-import { QrCode, Smartphone, ScanLine, CheckCircle, Download, Copy, Crown } from 'lucide-react'
+import { QrCode, Smartphone, ScanLine, CheckCircle, Download, Copy } from 'lucide-react'
+import PageHero from '@/components/PageHero'
 import { useState, useEffect } from 'react'
-import Footer from '@/components/Footer'
 
 export default function QRCodePage() {
   const [copied, setCopied] = useState(false)
@@ -40,20 +40,7 @@ export default function QRCodePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="bg-burgundy-900 py-8 sm:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="h-px w-12 bg-gold-500"></div>
-            <Crown className="w-6 h-6 text-gold-500" />
-            <div className="h-px w-12 bg-gold-500"></div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">QR Code Voting</h1>
-          <p className="text-burgundy-200 text-base sm:text-lg max-w-xl mx-auto">
-            Scan with your phone to access the voting page instantly
-          </p>
-        </div>
-      </div>
+      <PageHero title="QR Code Voting" subtitle="Scan with your phone to access the voting page instantly" />
 
       <div className="container mx-auto px-4 py-10 sm:py-16">
         {/* QR Code Card */}
@@ -262,7 +249,6 @@ export default function QRCodePage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   )
 }

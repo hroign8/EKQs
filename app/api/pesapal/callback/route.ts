@@ -15,6 +15,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/vote?payment=error', request.url))
     }
 
+    // Validate format to prevent injection
+    if (!/^[a-zA-Z0-9-]+$/.test(orderTrackingId)) {
+      return NextResponse.redirect(new URL('/vote?payment=error', request.url))
+    }
+
     const status = await getTransactionStatus(orderTrackingId)
 
     // status_code 1 = completed, 2 = failed, 3 = reversed

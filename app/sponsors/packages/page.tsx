@@ -15,7 +15,6 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import Link from 'next/link'
-import Footer from '@/components/Footer'
 
 interface SponsorshipTier {
   tier: string
@@ -474,7 +473,6 @@ export default function PackagesPage() {
         </div>
       </div>
 
-      <Footer />
     </main>
   )
 }

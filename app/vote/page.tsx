@@ -4,9 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useContestants, useApiData } from '@/lib/hooks'
-import { Crown, Heart, Loader2 } from 'lucide-react'
+import { Crown, Heart } from 'lucide-react'
 import VotingModal from '@/components/VotingModal'
-import Footer from '@/components/Footer'
+import PageHero from '@/components/PageHero'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Contestant } from '@/types'
 
 interface Category {
@@ -38,32 +39,12 @@ export default function VotePage() {
   const totalVotes = sortedContestants.reduce((sum, c) => sum + getVoteCount(c), 0)
 
   if (contestantsLoading || categoriesLoading) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-gold-500 mx-auto mb-4" />
-          <p className="text-gray-500">Loading standings...</p>
-        </div>
-      </main>
-    )
+    return <LoadingSpinner message="Loading standings..." />
   }
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="bg-burgundy-900 py-8 sm:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="h-px w-12 bg-gold-500"></div>
-            <Crown className="w-6 h-6 text-gold-500" />
-            <div className="h-px w-12 bg-gold-500"></div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">Live Standings</h1>
-          <p className="text-burgundy-200 text-base sm:text-lg max-w-xl mx-auto">
-            Cast your vote and watch the competition unfold in real-time
-          </p>
-        </div>
-      </div>
+      <PageHero title="Live Standings" subtitle="Cast your vote and watch the competition unfold in real-time" />
 
       <div className="container mx-auto px-4 py-8 sm:py-12">
         {/* Stats Bar */}
@@ -135,7 +116,7 @@ export default function VotePage() {
                     </div>
                     <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
                       <Image 
-                        src={contestant.image} 
+                        src={contestant.image || '/uploads/contestants/placeholder.svg'} 
                         alt={contestant.name}
                         fill
                         className="rounded-full object-cover transition-transform group-hover:scale-105"
@@ -221,7 +202,6 @@ export default function VotePage() {
         />
       )}
 
-      <Footer />
     </main>
   )
 }

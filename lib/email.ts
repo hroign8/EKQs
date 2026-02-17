@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { escapeHtml } from '@/lib/utils'
 
 const resendApiKey = process.env.RESEND_API_KEY
 
@@ -19,6 +20,11 @@ const fromAddress = process.env.EMAIL_FROM || 'EKQs <noreply@eritreankingsqueens
 
 export async function sendVerificationEmail(to: string, url: string) {
   if (!resendApiKey) return
+  // Validate URL scheme to prevent javascript: injection
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    console.error('Invalid URL scheme in verification email:', url.slice(0, 20))
+    return
+  }
   try {
     await getResend().emails.send({
       from: fromAddress,
@@ -51,6 +57,11 @@ export async function sendVerificationEmail(to: string, url: string) {
 
 export async function sendPasswordResetEmail(to: string, url: string) {
   if (!resendApiKey) return
+  // Validate URL scheme to prevent javascript: injection
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    console.error('Invalid URL scheme in password reset email:', url.slice(0, 20))
+    return
+  }
   try {
     await getResend().emails.send({
       from: fromAddress,
@@ -93,7 +104,7 @@ export async function sendVoteConfirmationEmail(
     await getResend().emails.send({
       from: fromAddress,
       to,
-      subject: `Vote Confirmed - ${votesCount} vote(s) for ${contestantName}`,
+      subject: `Vote Confirmed - ${votesCount} vote(s) for ${escapeHtml(contestantName)}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; padding: 20px 0;">
@@ -105,8 +116,8 @@ export async function sendVoteConfirmationEmail(
               Your vote has been successfully recorded.
             </p>
             <div style="background: white; border-radius: 8px; padding: 16px; margin: 16px 0; text-align: left;">
-              <p style="margin: 4px 0;"><strong>Contestant:</strong> ${contestantName}</p>
-              <p style="margin: 4px 0;"><strong>Category:</strong> ${category}</p>
+              <p style="margin: 4px 0;"><strong>Contestant:</strong> ${escapeHtml(contestantName)}</p>
+              <p style="margin: 4px 0;"><strong>Category:</strong> ${escapeHtml(category)}</p>
               <p style="margin: 4px 0;"><strong>Votes:</strong> ${votesCount}</p>
               <p style="margin: 4px 0;"><strong>Amount Paid:</strong> $${amount.toFixed(2)}</p>
             </div>

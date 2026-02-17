@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
-import { Heart, ChevronLeft, Crown, Award, Camera, Star, Loader2 } from 'lucide-react'
-import Footer from '@/components/Footer'
+import { Heart, ChevronLeft, Crown, Award, Camera, Star } from 'lucide-react'
 import Link from 'next/link'
 import VotingModal from '@/components/VotingModal'
 import type { Contestant } from '@/types'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
 export default function ContestantDetailsPage() {
   const params = useParams()
@@ -33,14 +33,7 @@ export default function ContestantDetailsPage() {
   }, [params.id])
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-gold-500 mx-auto mb-4" />
-          <p className="text-gray-500">Loading contestant...</p>
-        </div>
-      </main>
-    )
+    return <LoadingSpinner message="Loading contestant..." />
   }
 
   if (!contestant) {
@@ -91,7 +84,7 @@ export default function ContestantDetailsPage() {
               <div className="sticky top-20">
                 <div className="relative rounded-2xl overflow-hidden aspect-[3/4] max-h-[60vh] md:max-h-none">
                   <Image 
-                    src={contestant.image}
+                    src={contestant.image || '/uploads/contestants/placeholder.svg'}
                     alt={contestant.name}
                     fill
                     className="object-cover"
@@ -194,7 +187,6 @@ export default function ContestantDetailsPage() {
         />
       )}
 
-      <Footer />
     </main>
   )
 }

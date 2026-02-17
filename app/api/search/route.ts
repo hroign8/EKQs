@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('search', 30, 60_000) // 30 per minute
 
 /**
  * GET /api/search?q=query
@@ -7,6 +10,12 @@ import { prisma } from '@/lib/db'
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limit by IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const check = limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ contestants: [], error: 'Too many requests' }, { status: 429 })
+    }
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')?.trim()
 

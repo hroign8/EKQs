@@ -1,8 +1,9 @@
 'use client'
 
-import { Crown, Instagram, Facebook, Twitter, Mail, Send, Loader2, CheckCircle } from 'lucide-react'
+import { Instagram, Facebook, Twitter, Mail, Send, Loader2, CheckCircle } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function Footer() {
   const [email, setEmail] = useState('')
@@ -50,7 +51,13 @@ export default function Footer() {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
-              <Crown className="w-6 h-6 text-gold-500" />
+              <Image
+                src="/kings and queenz logo.svg"
+                alt="EKQs Logo"
+                width={32}
+                height={32}
+                className="rounded-full"
+              />
               <span className="text-xl font-bold">
                 Eritrean <span className="text-gold-500">Kings & Queens</span>
               </span>
@@ -80,7 +87,6 @@ export default function Footer() {
             <ul className="space-y-3">
               <li><Link href="/" className="text-burgundy-200 hover:text-gold-500 transition-colors">Vote</Link></li>
               <li><Link href="/results" className="text-burgundy-200 hover:text-gold-500 transition-colors">Standings</Link></li>
-              {/* <li><Link href="/qr-code" className="text-burgundy-200 hover:text-gold-500 transition-colors">QR Code</Link></li> */}
               <li><Link href="/sponsors" className="text-burgundy-200 hover:text-gold-500 transition-colors">Sponsors</Link></li>
               <li><Link href="/faqs" className="text-burgundy-200 hover:text-gold-500 transition-colors">FAQs</Link></li>
             </ul>

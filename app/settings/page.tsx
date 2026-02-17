@@ -24,7 +24,6 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useSession, updateUser, changePassword } from '@/lib/auth-client'
-import Footer from '@/components/Footer'
 
 type SettingsTab = 'profile' | 'security' | 'notifications'
 
@@ -717,7 +716,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   )
 }

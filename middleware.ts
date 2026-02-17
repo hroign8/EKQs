@@ -6,10 +6,8 @@ import { NextRequest, NextResponse } from 'next/server'
  * Better Auth handles session validation server-side via its own API.
  * This middleware guards admin routes by checking cookies exist
  * (a lightweight check — full auth is validated in the API routes).
- *
- * Additional CSP and security headers are applied to all routes.
  */
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Admin route protection — check for session cookie
@@ -25,23 +23,7 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.next()
-
-  // Content Security Policy
-  response.headers.set(
-    'Content-Security-Policy',
-    [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: https://images.unsplash.com https://*.googleusercontent.com",
-      "connect-src 'self' https://api.exchangerate-api.com https://*.pesapal.com",
-      "frame-ancestors 'none'",
-    ].join('; ')
-  )
-
-  return response
+  return NextResponse.next()
 }
 
 export const config = {

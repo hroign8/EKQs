@@ -3,9 +3,9 @@
 import Image from 'next/image'
 import { Crown, Camera, Loader2 } from 'lucide-react'
 import { useContestants } from '@/lib/hooks'
-import Footer from '@/components/Footer'
 import Link from 'next/link'
 import { useState } from 'react'
+import PageHero from '@/components/PageHero'
 
 export default function GalleryPage() {
   const [filter, setFilter] = useState<'all' | 'Male' | 'Female'>('all')
@@ -17,22 +17,7 @@ export default function GalleryPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-burgundy-900 py-8 sm:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="h-px w-12 bg-gold-500"></div>
-            <Camera className="w-6 h-6 text-gold-500" />
-            <div className="h-px w-12 bg-gold-500"></div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">
-            Photo <span className="text-gold-500">Gallery</span>
-          </h1>
-          <p className="text-burgundy-200 text-base sm:text-lg max-w-xl mx-auto">
-            Browse photos of our talented contestants
-          </p>
-        </div>
-      </div>
+      <PageHero title="Photo" highlightedWord="Gallery" subtitle="Browse photos of our talented contestants" icon={Camera} />
 
       {/* Filter Tabs */}
       <div className="container mx-auto px-4 py-6 sm:py-8">
@@ -81,7 +66,7 @@ export default function GalleryPage() {
               <div className="group bg-white rounded-xl sm:rounded-2xl overflow-hidden hover:ring-2 hover:ring-gold-500 transition-all">
                 <div className="relative aspect-square overflow-hidden">
                   <Image
-                    src={contestant.image}
+                    src={contestant.image || '/uploads/contestants/placeholder.svg'}
                     alt={contestant.name}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -162,7 +147,6 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      <Footer />
     </main>
   )
 }

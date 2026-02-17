@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useContestants, useEvent } from '@/lib/hooks'
-import { Crown, Calendar, MapPin, Users, Star, Loader2 } from 'lucide-react'
+import { Crown, Calendar, MapPin, Users, Star } from 'lucide-react'
 import VotingModal from '@/components/VotingModal'
 import CountdownTimer from '@/components/CountdownTimer'
-import Footer from '@/components/Footer'
 import Link from 'next/link'
 import type { Contestant } from '@/types'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import { formatDate } from '@/lib/utils'
 
 export default function Home() {
   const { data: contestants, loading: contestantsLoading } = useContestants()
@@ -28,25 +29,12 @@ export default function Home() {
     }
   }
 
-  const formatDate = (dateStr: string) => {
-    const [day, month, year] = dateStr.split('/').map(Number)
-    const date = new Date(year, month - 1, day)
-    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-  }
-
   const topContestants = [...contestants].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0)).slice(0, 3)
 
   const isLoading = contestantsLoading || eventLoading
 
   if (isLoading) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-gold-500 mx-auto mb-4" />
-          <p className="text-gray-500">Loading...</p>
-        </div>
-      </main>
-    )
+    return <LoadingSpinner />
   }
 
   return (
@@ -144,7 +132,7 @@ export default function Home() {
                       index === 0 ? 'border-gold-500' : index === 1 ? 'border-gray-300' : 'border-amber-600'
                     } group-hover:scale-105 transition-transform`}>
                       <Image 
-                        src={contestant.image} 
+                        src={contestant.image || '/uploads/contestants/placeholder.svg'} 
                         alt={contestant.name}
                         fill
                         className="object-cover"
@@ -230,8 +218,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      <Footer />
 
       {showVotingModal && selectedContestant && (
         <VotingModal

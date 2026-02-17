@@ -1,28 +1,13 @@
 'use client'
 
-import { Crown, Shield, Eye, Database, Cookie, UserCheck, Globe, Mail } from 'lucide-react'
+import { Shield, Eye, Database, Cookie, UserCheck, Globe, Mail } from 'lucide-react'
 import Link from 'next/link'
-import Footer from '@/components/Footer'
+import PageHero from '@/components/PageHero'
 
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="bg-burgundy-900 py-8 sm:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="h-px w-12 bg-gold-500"></div>
-            <Crown className="w-6 h-6 text-gold-500" />
-            <div className="h-px w-12 bg-gold-500"></div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">
-            Privacy Policy
-          </h1>
-          <p className="text-burgundy-200 text-base sm:text-lg max-w-xl mx-auto">
-            How we collect, use, and protect your information
-          </p>
-        </div>
-      </div>
+      <PageHero title="Privacy Policy" subtitle="How we collect, use, and protect your information" />
 
       {/* Content */}
       <div className="container mx-auto px-4 py-8 sm:py-12">
@@ -249,7 +234,6 @@ export default function PrivacyPolicyPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   )
 }

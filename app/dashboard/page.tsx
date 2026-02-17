@@ -23,7 +23,6 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
-import Footer from '@/components/Footer'
 
 type DashboardStats = {
   totalVotesCast: number
@@ -705,7 +704,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <Footer />
     </div>
   )
 }

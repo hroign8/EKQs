@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import Link from 'next/link'
-import Footer from '@/components/Footer'
+import PageHero from '@/components/PageHero'
 
 interface SponsorItem {
   name: string
@@ -76,22 +76,7 @@ function SponsorRow({ sponsor }: { sponsor: SponsorItem }) {
 export default function SponsorsPage() {
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Hero */}
-      <div className="bg-burgundy-900 py-8 sm:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="h-px w-12 bg-gold-500"></div>
-            <Crown className="w-6 h-6 text-gold-500" />
-            <div className="h-px w-12 bg-gold-500"></div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">
-            Sponsors & <span className="text-gold-500">Partners</span>
-          </h1>
-          <p className="text-burgundy-200 text-base sm:text-lg max-w-xl mx-auto">
-            The organizations and individuals making our event possible
-          </p>
-        </div>
-      </div>
+      <PageHero title="Sponsors &" highlightedWord="Partners" subtitle="The organizations and individuals making our event possible" />
 
       <div className="container mx-auto px-4 py-10 sm:py-16">
         <div className="max-w-4xl mx-auto space-y-8 sm:space-y-10">
@@ -202,7 +187,6 @@ export default function SponsorsPage() {
         </div>
       </div>
 
-      <Footer />
     </main>
   )
 }

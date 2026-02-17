@@ -4,9 +4,10 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { useContestants } from '@/lib/hooks'
 import { useApiData } from '@/lib/hooks'
-import { Heart, Crown, Loader2 } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import VotingModal from '@/components/VotingModal'
-import Footer from '@/components/Footer'
+import PageHero from '@/components/PageHero'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Contestant } from '@/types'
 
 interface Category {
@@ -53,32 +54,12 @@ export default function ContestantsPage() {
   const queensCount = contestants.filter(c => c.gender === 'Female').length
 
   if (contestantsLoading || categoriesLoading) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-gold-500 mx-auto mb-4" />
-          <p className="text-gray-500">Loading contestants...</p>
-        </div>
-      </main>
-    )
+    return <LoadingSpinner message="Loading contestants..." />
   }
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Hero Header */}
-      <div className="bg-burgundy-900 py-8 sm:py-16">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="h-px w-12 bg-gold-500"></div>
-            <Crown className="w-6 h-6 text-gold-500" />
-            <div className="h-px w-12 bg-gold-500"></div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4">Meet Our Contestants</h1>
-          <p className="text-burgundy-200 text-base sm:text-lg max-w-xl mx-auto">
-            Discover the talented individuals competing for the crown
-          </p>
-        </div>
-      </div>
+      <PageHero title="Meet Our Contestants" subtitle="Discover the talented individuals competing for the crown" />
 
       <div className="container mx-auto px-4 py-8 sm:py-12">
         {/* Stats Bar */}
@@ -151,7 +132,7 @@ export default function ContestantsPage() {
                 {/* Contestant Image */}
                 <div className="relative h-48 sm:h-72 overflow-hidden">
                   <Image 
-                    src={contestant.image} 
+                    src={contestant.image || '/uploads/contestants/placeholder.svg'} 
                     alt={contestant.name}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -225,7 +206,6 @@ export default function ContestantsPage() {
         />
       )}
 
-      <Footer />
     </main>
   )
 }

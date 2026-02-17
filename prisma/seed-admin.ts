@@ -16,10 +16,16 @@ import pg from 'pg'
  *   ADMIN_EMAIL=me@example.com ADMIN_PASSWORD=Secret123! npm run db:seed-admin
  */
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@ekq.com'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@2026!'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin'
 const APP_URL = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error('❌ ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required.')
+  console.error('   Usage: ADMIN_EMAIL=me@example.com ADMIN_PASSWORD=Secret123! npm run db:seed-admin')
+  process.exit(1)
+}
 
 async function main() {
   console.log('🔐 Seeding admin account...')

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Timer } from 'lucide-react'
+import { formatDateShort } from '@/lib/utils'
 
 interface TimeRemaining {
   days: number
@@ -61,12 +62,6 @@ export default function CountdownTimer({ endDate, eventDate }: { endDate: string
     return () => clearInterval(timer)
   }, [targetDate])
 
-  const formatDate = (dateStr: string) => {
-    const [day, month, year] = dateStr.split('/').map(Number)
-    const date = new Date(year, month - 1, day)
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  }
-
   if (timeRemaining.isExpired) {
     return (
       <div className="bg-burgundy-900 rounded-2xl p-5 sm:p-8 text-center">
@@ -80,7 +75,7 @@ export default function CountdownTimer({ endDate, eventDate }: { endDate: string
     <div className="bg-burgundy-900 rounded-2xl p-5 sm:p-8">
       <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
         <Timer className="w-4 h-4 sm:w-5 sm:h-5 text-gold-500" />
-        <h2 className="text-sm sm:text-lg font-semibold text-white">Voting Ends {formatDate(targetDate)}</h2>
+        <h2 className="text-sm sm:text-lg font-semibold text-white">Voting Ends {formatDateShort(targetDate)}</h2>
       </div>
       
       <div className="flex items-center justify-center gap-2 sm:gap-6">
