@@ -3,13 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 // ─── Better Auth Core Tables ─────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   email         String    @unique
   emailVerified Boolean   @default(false)
@@ -33,12 +34,12 @@ model User {
 }
 
 model Session {
-  id             String   @id @default(cuid())
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
   expiresAt      DateTime
   token          String   @unique
   ipAddress      String?
   userAgent      String?
-  userId         String
+  userId         String   @db.ObjectId
   impersonatedBy String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -49,10 +50,10 @@ model Session {
 }
 
 model Account {
-  id                    String    @id @default(cuid())
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
   accountId             String
   providerId            String
-  userId                String
+  userId                String    @db.ObjectId
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -69,7 +70,7 @@ model Account {
 }
 
 model Verification {
-  id         String   @id @default(cuid())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   identifier String
   value      String
   expiresAt  DateTime
@@ -82,7 +83,7 @@ model Verification {
 // ─── Application Tables ──────────────────────────────────────
 
 model Contestant {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   country     String
   gender      String
@@ -99,7 +100,7 @@ model Contestant {
 }
 
 model VotingCategory {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   slug      String   @unique
   name      String
   isActive  Boolean  @default(true)
@@ -112,7 +113,7 @@ model VotingCategory {
 }
 
 model VotingPackage {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   slug      String   @unique
   name      String
   votes     Int
@@ -127,11 +128,11 @@ model VotingPackage {
 }
 
 model Vote {
-  id            String   @id @default(cuid())
-  contestantId  String
-  categoryId    String
-  userId        String
-  packageId     String
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  contestantId  String   @db.ObjectId
+  categoryId    String   @db.ObjectId
+  userId        String   @db.ObjectId
+  packageId     String   @db.ObjectId
   votesCount    Int      @default(1)
   amountPaid    Float    @default(0)
   transactionId String?
@@ -150,7 +151,7 @@ model Vote {
 }
 
 model Event {
-  id               String   @id @default(cuid())
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
   name             String
   tagline          String
   startDate        String
@@ -166,7 +167,7 @@ model Event {
 }
 
 model TicketType {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   price     Float
   features  String[]
@@ -183,9 +184,9 @@ model TicketType {
 }
 
 model TicketPurchase {
-  id            String   @id @default(cuid())
-  userId        String
-  ticketTypeId  String
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  ticketTypeId  String   @db.ObjectId
   quantity      Int      @default(1)
   totalAmount   Float
   transactionId String?
@@ -201,7 +202,7 @@ model TicketPurchase {
 }
 
 model PesapalTransaction {
-  id                    String   @id @default(cuid())
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   orderTrackingId       String   @unique
   merchantReference     String   @unique
   transactionType       String
@@ -215,14 +216,12 @@ model PesapalTransaction {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  @@index([orderTrackingId])
-  @@index([merchantReference])
   @@map("pesapal_transaction")
 }
 
 model ContactMessage {
-  id        String   @id @default(cuid())
-  userId    String?
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?  @db.ObjectId
   name      String
   email     String
   subject   String?
@@ -236,8 +235,8 @@ model ContactMessage {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
   type      String   // vote_confirmed, ticket_purchased, welcome, message_reply
   title     String
   message   String
@@ -252,7 +251,7 @@ model Notification {
 }
 
 model Subscriber {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   createdAt DateTime @default(now())
 
