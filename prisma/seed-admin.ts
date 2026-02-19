@@ -1,12 +1,11 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
-import { scryptAsync } from '@noble/hashes/scrypt.js'
-import crypto from 'node:crypto'
+import { hashPassword } from 'better-auth/crypto'
 
 /**
  * Seed the admin account directly in the database.
- * No running server required — password is hashed using the same
- * scrypt algorithm that Better Auth uses internally.
+ * No running server required — uses Better Auth's own hashPassword
+ * to ensure the hash is compatible with its verifyPassword.
  *
  * Set these environment variables before running:
  *   ADMIN_EMAIL    – admin login email    (required)
@@ -25,19 +24,6 @@ if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
   console.error('❌ ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required.')
   console.error('   Usage: ADMIN_EMAIL=me@example.com ADMIN_PASSWORD=Secret123! npm run db:seed-admin')
   process.exit(1)
-}
-
-/** Hash a password using the same scrypt config as Better Auth */
-async function hashPassword(password: string): Promise<string> {
-  const salt = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('hex')
-  const key = await scryptAsync(password.normalize('NFKC'), salt, {
-    N: 16384,
-    p: 1,
-    r: 16,
-    dkLen: 64,
-    maxmem: 128 * 16384 * 16 * 2,
-  })
-  return `${salt}:${Buffer.from(key).toString('hex')}`
 }
 
 async function main() {

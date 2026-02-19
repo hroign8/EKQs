@@ -9,6 +9,13 @@ export const auth = betterAuth({
     provider: 'mongodb',
   }),
 
+  advanced: {
+    database: {
+      // Let MongoDB/Prisma auto-generate ObjectIds instead of Better Auth's default string IDs
+      generateId: false,
+    },
+  },
+
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
