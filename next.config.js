@@ -53,7 +53,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com",
-              `connect-src 'self' ${process.env.NEXT_PUBLIC_APP_URL || ''} https://api.exchangerate-api.com https://*.pesapal.com`,
+              `connect-src 'self' https://ek-qs.vercel.app ${process.env.NEXT_PUBLIC_APP_URL || ''} https://api.exchangerate-api.com https://*.pesapal.com`,
               "frame-ancestors 'none'",
             ].join('; '),
           },
