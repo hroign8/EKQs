@@ -43,8 +43,13 @@ export default function SignInPage() {
     setGoogleLoading(true);
     setError("");
     try {
-      await signIn.social({ provider: "google", callbackURL: "/" });
-    } catch {
+      const result = await signIn.social({ provider: "google", callbackURL: "/" });
+      if (result?.error) {
+        setError(result.error.message || "Google sign-in failed. Please try again.");
+        setGoogleLoading(false);
+      }
+    } catch (err) {
+      console.error("Google sign-in error:", err);
       setError("Google sign-in failed. Please try again.");
       setGoogleLoading(false);
     }

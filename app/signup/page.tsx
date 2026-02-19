@@ -58,8 +58,13 @@ export default function SignUpPage() {
     setGoogleLoading(true);
     setError("");
     try {
-      await signIn.social({ provider: "google", callbackURL: "/" });
-    } catch {
+      const result = await signIn.social({ provider: "google", callbackURL: "/" });
+      if (result?.error) {
+        setError(result.error.message || "Google sign-up failed. Please try again.");
+        setGoogleLoading(false);
+      }
+    } catch (err) {
+      console.error("Google sign-up error:", err);
       setError("Google sign-up failed. Please try again.");
       setGoogleLoading(false);
     }
