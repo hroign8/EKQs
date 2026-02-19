@@ -1,6 +1,19 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable React strict mode for better development experience
+  reactStrictMode: true,
+  
+  // Optimize production builds
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+  
+  // Enable experimental features for better performance
+  experimental: {
+    optimizeCss: true,
+  },
+  
   turbopack: {
     root: __dirname,
   },
@@ -15,6 +28,9 @@ const nextConfig = {
         hostname: 'lh3.googleusercontent.com',
       },
     ],
+    // Optimize images
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
   },
   async headers() {
     return [

@@ -1,0 +1,16 @@
+{
+  "name": "Eritrean Kings & Queens",
+  "short_name": "EKQs",
+  "description": "Digital voting platform for Eritrean Kings & Queens competition",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#4a1942",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

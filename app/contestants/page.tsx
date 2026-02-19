@@ -2,13 +2,18 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { useContestants } from '@/lib/hooks'
 import { useApiData } from '@/lib/hooks'
 import { Heart } from 'lucide-react'
-import VotingModal from '@/components/VotingModal'
 import PageHero from '@/components/PageHero'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Contestant } from '@/types'
+
+// Lazy load voting modal
+const VotingModal = dynamic(() => import('@/components/VotingModal'), {
+  ssr: false,
+})
 
 interface Category {
   id: string

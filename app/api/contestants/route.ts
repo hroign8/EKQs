@@ -56,6 +56,7 @@ export async function GET() {
     return NextResponse.json(result)
   } catch (error) {
     console.error('Failed to fetch contestants:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: 'Internal server error', details: errorMessage }, { status: 500 })
   }
 }

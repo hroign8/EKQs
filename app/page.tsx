@@ -1,15 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { useContestants, useEvent } from '@/lib/hooks'
 import { Crown, Calendar, MapPin, Users, Star } from 'lucide-react'
-import VotingModal from '@/components/VotingModal'
 import CountdownTimer from '@/components/CountdownTimer'
 import Link from 'next/link'
 import type { Contestant } from '@/types'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { formatDate } from '@/lib/utils'
+
+// Lazy load the voting modal since it's not needed on initial render
+const VotingModal = dynamic(() => import('@/components/VotingModal'), {
+  loading: () => <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><LoadingSpinner /></div>,
+  ssr: false,
+})
 
 export default function Home() {
   const { data: contestants, loading: contestantsLoading } = useContestants()

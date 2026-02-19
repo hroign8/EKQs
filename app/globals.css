@@ -25,8 +25,12 @@
   }
   
   * {
-    @apply transition-colors duration-200;
     box-sizing: border-box;
+  }
+
+  /* Apply transitions only to interactive elements for better performance */
+  a, button, input, select, textarea {
+    @apply transition-colors duration-200;
   }
 
   /* Prevent horizontal overflow on mobile */
