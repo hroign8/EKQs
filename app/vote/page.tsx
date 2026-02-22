@@ -7,23 +7,18 @@ import { useContestants, useApiData } from '@/lib/hooks'
 import { Crown, Heart } from 'lucide-react'
 import VotingModal from '@/components/VotingModal'
 import PageHero from '@/components/PageHero'
+import { genderTitle } from '@/lib/utils'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import type { Contestant } from '@/types'
-
-interface Category {
-  id: string
-  name: string
-  slug: string
-}
+import type { Contestant, VotingCategory } from '@/types'
 
 export default function VotePage() {
   const { data: contestants, loading: contestantsLoading } = useContestants()
-  const { data: categories, loading: categoriesLoading } = useApiData<Category[]>('/api/categories', [])
+  const { data: categories, loading: categoriesLoading } = useApiData<VotingCategory[]>('/api/categories', [])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [showVotingModal, setShowVotingModal] = useState(false)
   const [selectedContestant, setSelectedContestant] = useState<Contestant | null>(null)
 
-  const activeCategorySlug = selectedCategory || (categories.length > 0 ? categories[0].slug : 'peoplesChoice')
+  const activeCategorySlug = selectedCategory || (categories.length > 0 ? (categories[0].slug ?? 'peoplesChoice') : 'peoplesChoice')
 
   const handleVoteClick = (contestant: Contestant) => {
     setSelectedContestant(contestant)
@@ -31,7 +26,7 @@ export default function VotePage() {
   }
 
   const getVoteCount = (contestant: Contestant) => {
-    return (contestant.votes as Record<string, number>)[activeCategorySlug] || 0
+    return contestant.votes?.[activeCategorySlug] ?? 0
   }
 
   const sortedContestants = [...contestants].sort((a, b) => getVoteCount(b) - getVoteCount(a))
@@ -62,20 +57,25 @@ export default function VotePage() {
               <div className="text-sm font-medium text-gray-500 mb-1">Current Leader</div>
               <div className="text-base sm:text-xl font-bold text-gold-500 truncate">{sortedContestants[0]?.name}</div>
             </div>
-            <div className="flex items-center justify-center sm:justify-start gap-2 bg-green-50 px-3 sm:px-4 py-2 rounded-full col-span-2 sm:col-span-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <div className="flex items-center justify-center sm:justify-start gap-2 bg-green-50 px-3 sm:px-4 py-2 rounded-full col-span-2 sm:col-span-1"
+              aria-label="Voting is currently open"
+            >
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true"></div>
               <span className="text-green-700 font-medium text-sm">Voting Open</span>
             </div>
           </div>
         </div>
 
         {/* Category Tabs */}
-        <div className="overflow-x-auto scroll-container -mx-4 px-4 sm:mx-0 sm:px-0 mb-8 sm:mb-10">
+        <div role="tablist" aria-label="Vote categories" className="overflow-x-auto scroll-container -mx-4 px-4 sm:mx-0 sm:px-0 mb-8 sm:mb-10">
           <div className="flex justify-start sm:justify-center gap-2 sm:gap-3 min-w-max sm:min-w-0 sm:flex-wrap">
             {categories.map((category) => (
               <button
                 key={category.slug}
-                onClick={() => setSelectedCategory(category.slug)}
+                id={`vote-tab-${category.slug}`}
+                role="tab"
+                aria-selected={activeCategorySlug === category.slug}
+                onClick={() => setSelectedCategory(category.slug ?? '')}
                 className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap text-sm sm:text-base ${
                   activeCategorySlug === category.slug
                     ? 'bg-burgundy-900 text-white'
@@ -89,7 +89,11 @@ export default function VotePage() {
         </div>
 
         {/* Leaderboard */}
-        <div className="bg-white rounded-2xl overflow-hidden">
+        <div
+          role="tabpanel"
+          aria-labelledby={`vote-tab-${activeCategorySlug}`}
+          className="bg-white rounded-2xl overflow-hidden"
+        >
           {sortedContestants.map((contestant, index) => {
             const votes = getVoteCount(contestant)
             const percentage = maxVotes > 0 ? (votes / maxVotes) * 100 : 0
@@ -139,7 +143,7 @@ export default function VotePage() {
                           ? 'bg-blue-50 text-blue-700' 
                           : 'bg-pink-50 text-pink-700'
                       }`}>
-                        {contestant.gender === 'Male' ? 'King' : 'Queen'}
+                        {genderTitle(contestant.gender)}
                       </span>
                     </div>
                     <p className="text-gray-500 text-xs sm:text-sm line-clamp-1 mb-2 sm:mb-3">{contestant.description}</p>
@@ -148,6 +152,11 @@ export default function VotePage() {
                     <div className="flex items-center gap-2 sm:gap-3">
                       <div className="flex-1 bg-gray-100 rounded-full h-2 sm:h-3 overflow-hidden">
                         <div 
+                          role="progressbar"
+                          aria-valuenow={Math.round(percentage)}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`${contestant.name} at ${percentage.toFixed(0)}% of top vote count`}
                           className={`h-full rounded-full transition-all duration-700 ${
                             index === 0 
                               ? 'bg-gradient-to-r from-gold-400 to-gold-500' 
@@ -174,6 +183,7 @@ export default function VotePage() {
                     
                     <button 
                       onClick={() => handleVoteClick(contestant)}
+                      aria-label={`Vote for ${contestant.name}`}
                       className="bg-gold-500 text-burgundy-900 px-5 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold hover:bg-gold-400 transition-colors whitespace-nowrap text-sm sm:text-base"
                     >
                       Vote Now

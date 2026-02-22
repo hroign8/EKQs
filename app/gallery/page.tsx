@@ -6,6 +6,7 @@ import { useContestants } from '@/lib/hooks'
 import Link from 'next/link'
 import { useState } from 'react'
 import PageHero from '@/components/PageHero'
+import { genderTitle } from '@/lib/utils'
 
 export default function GalleryPage() {
   const [filter, setFilter] = useState<'all' | 'Male' | 'Female'>('all')
@@ -78,7 +79,7 @@ export default function GalleryPage() {
                     {contestant.name}
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-500">
-                    {contestant.gender === 'Male' ? 'King' : 'Queen'} Contestant
+                    {genderTitle(contestant.gender)} Contestant
                   </p>
                 </div>
               </div>

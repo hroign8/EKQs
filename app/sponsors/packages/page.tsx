@@ -1,5 +1,3 @@
-'use client'
-
 import {
   Crown,
   Gem,
@@ -15,6 +13,12 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Sponsorship Packages | Eritrean Kings & Queens',
+  description: 'Explore our sponsorship tiers and become a partner of the Eritrean Kings & Queens pageant.',
+}
 
 interface SponsorshipTier {
   tier: string

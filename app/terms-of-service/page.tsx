@@ -1,8 +1,12 @@
-'use client'
-
+import type { Metadata } from 'next'
 import { Crown, Scale, AlertTriangle, CreditCard, Users, ShieldCheck, Gavel, Mail } from 'lucide-react'
 import Link from 'next/link'
 import PageHero from '@/components/PageHero'
+
+export const metadata: Metadata = {
+  title: 'Terms of Service | Eritrean Kings & Queens',
+  description: 'Review our Terms of Service governing your use of the Eritrean Kings & Queens platform.',
+}
 
 export default function TermsOfServicePage() {
   return (

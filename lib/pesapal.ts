@@ -64,6 +64,7 @@ interface PesapalIPNRegistration {
 const PESAPAL_API_URL = process.env.PESAPAL_API_URL || 'https://cybqa.pesapal.com/pesapalv3'
 
 let cachedToken: { token: string; expiresAt: Date } | null = null
+let cachedIpnId: { id: string; url: string } | null = null
 
 /**
  * Authenticate with PesaPal and get a bearer token.
@@ -110,8 +111,12 @@ export async function getPesapalToken(): Promise<string> {
 
 /**
  * Register an IPN (Instant Payment Notification) URL with PesaPal.
+ * Caches the IPN ID so repeated calls with the same URL skip the network round-trip.
  */
 export async function registerIPN(ipnUrl: string): Promise<string> {
+  if (cachedIpnId?.url === ipnUrl) {
+    return cachedIpnId.id
+  }
   const token = await getPesapalToken()
 
   const response = await fetch(`${PESAPAL_API_URL}/api/URLSetup/RegisterIPN`, {
@@ -137,6 +142,7 @@ export async function registerIPN(ipnUrl: string): Promise<string> {
     throw new Error(`PesaPal IPN error: ${data.error}`)
   }
 
+  cachedIpnId = { id: data.ipn_id, url: ipnUrl }
   return data.ipn_id
 }
 

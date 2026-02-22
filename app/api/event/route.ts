@@ -17,16 +17,15 @@ export async function GET() {
     }
 
     // Get aggregate stats
-    const [totalVotes, uniqueVoters] = await Promise.all([
+    const [totalVotesResult, uniqueVoterCount] = await Promise.all([
       prisma.vote.aggregate({
         _sum: { votesCount: true },
         where: { verified: true },
       }),
-      prisma.vote.findMany({
+      prisma.vote.groupBy({
+        by: ['userId'],
         where: { verified: true },
-        distinct: ['userId'],
-        select: { userId: true },
-      }),
+      }).then(groups => groups.length),
     ])
 
     return NextResponse.json({
@@ -35,13 +34,11 @@ export async function GET() {
       tagline: event.tagline,
       startDate: event.startDate,
       endDate: event.endDate,
-      votingPeriod: {
-        start: event.votingStart,
-        end: event.votingEnd,
-      },
+      votingStart: event.votingStart,
+      votingEnd: event.votingEnd,
       isActive: event.isActive,
-      totalVotes: totalVotes._sum.votesCount || 0,
-      uniqueVoters: uniqueVoters.length,
+      totalVotes: totalVotesResult._sum.votesCount || 0,
+      uniqueVoters: uniqueVoterCount,
       votePrice: event.votePrice,
     })
   } catch (error) {

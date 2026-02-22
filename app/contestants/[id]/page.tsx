@@ -8,6 +8,7 @@ import Link from 'next/link'
 import VotingModal from '@/components/VotingModal'
 import type { Contestant } from '@/types'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { genderTitle } from '@/lib/utils'
 
 export default function ContestantDetailsPage() {
   const params = useParams()
@@ -49,7 +50,7 @@ export default function ContestantDetailsPage() {
     )
   }
 
-  const votes = contestant.votes as Record<string, number>
+  const votes: Record<string, number> = contestant.votes ?? {}
   const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0)
   const contestantRank = contestant.rank || 0
 
@@ -108,7 +109,7 @@ export default function ContestantDetailsPage() {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-xs font-semibold text-burgundy-600 bg-burgundy-100 px-3 py-1 rounded-full">
-                    {contestant.gender === 'Male' ? 'King' : 'Queen'} Contestant
+                    {genderTitle(contestant.gender)} Contestant
                   </span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-burgundy-900 mb-3 sm:mb-4">{contestant.name}</h1>

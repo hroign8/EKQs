@@ -9,6 +9,7 @@ import { Heart } from 'lucide-react'
 import PageHero from '@/components/PageHero'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Contestant } from '@/types'
+import { genderTitle } from '@/lib/utils'
 
 // Lazy load voting modal
 const VotingModal = dynamic(() => import('@/components/VotingModal'), {
@@ -164,7 +165,7 @@ export default function ContestantsPage() {
                       ? 'bg-blue-500 text-white' 
                       : 'bg-pink-500 text-white'
                   }`}>
-                    {contestant.gender === 'Male' ? 'King' : 'Queen'}
+                    {genderTitle(contestant.gender)}
                   </div>
 
                   {/* Name Overlay */}
@@ -172,7 +173,7 @@ export default function ContestantsPage() {
                     <h3 className="text-sm sm:text-xl font-bold text-white mb-0.5 sm:mb-1 truncate">{contestant.name}</h3>
                     <div className="flex items-center gap-1 sm:gap-1.5 text-white/90">
                       <Heart className="w-3 h-3 sm:w-4 sm:h-4 fill-white/90" />
-                      <span className="text-xs sm:text-sm font-medium">{((contestant.votes as Record<string, number>)[activeCategorySlug] || 0).toLocaleString()} votes</span>
+                      <span className="text-xs sm:text-sm font-medium">{(contestant.votes?.[activeCategorySlug] ?? 0).toLocaleString()} votes</span>
                     </div>
                   </div>
                 </div>

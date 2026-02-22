@@ -2,6 +2,7 @@ import {
   submitVoteSchema,
   contactFormSchema,
   contestantSchema,
+  updateContestantSchema,
   eventSchema,
   ticketPurchaseSchema,
   categorySchema,
@@ -101,12 +102,12 @@ describe('contestantSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('fails with non-url image', () => {
+  it('fails with empty image', () => {
     const result = contestantSchema.safeParse({
       name: 'John',
       country: 'Eritrea',
       gender: 'Male',
-      image: 'not-a-url',
+      image: '',
       description: 'A talented individual with great presence.',
     })
     expect(result.success).toBe(false)
@@ -226,6 +227,45 @@ describe('packageSchema', () => {
       name: 'Gold Package',
       votes: 50,
       price: -5,
+    })
+    expect(result.success).toBe(false)
+  })
+})
+
+// ─── updateContestantSchema ───────────────────────────────────────
+
+describe('updateContestantSchema', () => {
+  it('passes with only id and partial fields', () => {
+    const result = updateContestantSchema.safeParse({
+      id: 'abc123',
+      name: 'Updated Name',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('passes with all fields', () => {
+    const result = updateContestantSchema.safeParse({
+      id: 'abc123',
+      name: 'John',
+      country: 'Eritrea',
+      gender: 'Male',
+      image: '/uploads/contestants/photo.jpg',
+      description: 'A talented individual with great presence.',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('fails when id is missing', () => {
+    const result = updateContestantSchema.safeParse({
+      name: 'Updated Name',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('fails with invalid gender', () => {
+    const result = updateContestantSchema.safeParse({
+      id: 'abc123',
+      gender: 'Unknown',
     })
     expect(result.success).toBe(false)
   })

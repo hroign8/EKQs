@@ -147,6 +147,7 @@ model Vote {
   @@index([contestantId])
   @@index([categoryId])
   @@index([userId])
+  @@index([userId, contestantId, categoryId])
   @@map("vote")
 }
 
@@ -159,6 +160,7 @@ model Event {
   votingStart      String
   votingEnd        String
   isActive         Boolean  @default(true)
+  publicResults    Boolean  @default(false)
   votePrice        Float    @default(0.30)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

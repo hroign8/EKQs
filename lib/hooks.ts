@@ -38,10 +38,18 @@ export function useApiData<T>(url: string, fallback: T) {
 }
 
 /**
- * Fetch contestants from the API.
+ * Fetch contestants from the API (returns first page of results).
  */
 export function useContestants() {
-  return useApiData<Contestant[]>('/api/contestants', [])
+  const result = useApiData<{ contestants: Contestant[]; total: number; page: number; totalPages: number } | Contestant[]>(
+    '/api/contestants',
+    [] as Contestant[]
+  )
+  // Normalise: API returns either a paginated object or a plain array (legacy)
+  const contestants = Array.isArray(result.data)
+    ? result.data
+    : (result.data as { contestants: Contestant[] }).contestants ?? []
+  return { ...result, data: contestants }
 }
 
 /**

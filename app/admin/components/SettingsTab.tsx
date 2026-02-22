@@ -2,6 +2,7 @@
 
 import { Edit, Plus, Eye, EyeOff, Trash2, Settings, Download, Upload } from 'lucide-react'
 import type { Category, VotingPackage, AdminTab, ModalType } from '../types'
+import { useToast } from '@/components/Toast'
 
 interface SettingsTabProps {
   categoriesList: Category[]
@@ -38,6 +39,7 @@ export default function SettingsTab({
   onSwitchTab,
   onOpenModal,
 }: SettingsTabProps) {
+  const toast = useToast()
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-6">
@@ -56,19 +58,19 @@ export default function SettingsTab({
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-gray-500">Event Name</label>
+              <p className="text-sm text-gray-500">Event Name</p>
               <p className="font-bold text-burgundy-900 mt-1">{eventFormData.name}</p>
             </div>
             <div>
-              <label className="text-sm text-gray-500">Tagline</label>
+              <p className="text-sm text-gray-500">Tagline</p>
               <p className="font-medium text-gray-700 mt-1">{eventFormData.tagline}</p>
             </div>
             <div>
-              <label className="text-sm text-gray-500">Event Dates</label>
+              <p className="text-sm text-gray-500">Event Dates</p>
               <p className="font-medium text-gray-700 mt-1">{eventFormData.startDate} - {eventFormData.endDate}</p>
             </div>
             <div>
-              <label className="text-sm text-gray-500">Voting Period</label>
+              <p className="text-sm text-gray-500">Voting Period</p>
               <p className="font-medium text-gray-700 mt-1">{eventFormData.votingStart} - {eventFormData.votingEnd}</p>
             </div>
           </div>
@@ -161,12 +163,14 @@ export default function SettingsTab({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => onEditCategory(category)}
+                    aria-label={`Edit ${category.name}`}
                     className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                   >
                     <Edit className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => onDeleteCategory(category.id)}
+                    aria-label={`Delete ${category.name}`}
                     className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -223,7 +227,7 @@ export default function SettingsTab({
               input.onchange = (e) => {
                 const file = (e.target as HTMLInputElement).files?.[0]
                 if (file) {
-                  alert(`File "${file.name}" selected. Import functionality would process this file.`)
+                  toast.info(`File "${file.name}" selected. Import functionality would process this file.`)
                 }
               }
               input.click()

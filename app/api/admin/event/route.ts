@@ -38,17 +38,18 @@ export async function POST(request: Request) {
       return errorResponse(parsed.error.issues[0].message)
     }
 
-    // Deactivate all other events first
-    await prisma.event.updateMany({
-      data: { isActive: false },
-    })
-
-    const event = await prisma.event.create({
-      data: {
-        ...parsed.data,
-        isActive: true,
-        votePrice: parsed.data.votePrice ?? 0.30,
-      },
+    // Deactivate all other events and create the new one atomically
+    const event = await prisma.$transaction(async (tx) => {
+      await tx.event.updateMany({
+        data: { isActive: false },
+      })
+      return tx.event.create({
+        data: {
+          ...parsed.data,
+          isActive: true,
+          votePrice: parsed.data.votePrice ?? 0.30,
+        },
+      })
     })
 
     return NextResponse.json(event, { status: 201 })

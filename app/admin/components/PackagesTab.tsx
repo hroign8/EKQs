@@ -105,21 +105,21 @@ export default function PackagesTab({
                     ? 'text-gray-400 hover:text-red-600 hover:bg-red-50'
                     : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
                 }`}
-                title={pkg.isActive ? 'Disable' : 'Enable'}
+                aria-label={pkg.isActive ? `Disable ${pkg.name}` : `Enable ${pkg.name}`}
               >
                 {pkg.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => onEditPackage(pkg)}
                 className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                title="Edit"
+                aria-label={`Edit ${pkg.name}`}
               >
                 <Edit className="w-4 h-4" />
               </button>
               <button
                 onClick={() => onDeletePackage(pkg.id)}
                 className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                title="Delete"
+                aria-label={`Delete ${pkg.name}`}
               >
                 <Trash2 className="w-4 h-4" />
               </button>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import NextImage from 'next/image'
 import Link from 'next/link'
@@ -23,55 +23,7 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
-
-type DashboardStats = {
-  totalVotesCast: number
-  totalTransactions: number
-  totalSpent: number
-  verifiedVotes: number
-  pendingVotes: number
-  confirmedTickets: number
-  pendingTickets: number
-  totalTicketsPurchased: number
-  messagesSent: number
-}
-
-type VoteEntry = {
-  id: string
-  contestantName: string
-  contestantImage: string
-  categoryName: string
-  packageName: string
-  votesCount: number
-  amountPaid: number
-  verified: boolean
-  createdAt: string
-}
-
-type TicketEntry = {
-  id: string
-  ticketName: string
-  quantity: number
-  totalAmount: number
-  status: string
-  createdAt: string
-}
-
-type MessageEntry = {
-  id: string
-  subject: string | null
-  message: string
-  read: boolean
-  createdAt: string
-}
-
-type AccountInfo = {
-  id: string
-  name: string
-  email: string
-  image: string | null
-  createdAt: string
-}
+import { useDashboardData } from './hooks/useDashboardData'
 
 type DashboardTab = 'overview' | 'votes' | 'tickets' | 'messages'
 
@@ -79,41 +31,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const { data: session, isPending: sessionPending } = useSession()
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview')
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState<DashboardStats>({
-    totalVotesCast: 0,
-    totalTransactions: 0,
-    totalSpent: 0,
-    verifiedVotes: 0,
-    pendingVotes: 0,
-    confirmedTickets: 0,
-    pendingTickets: 0,
-    totalTicketsPurchased: 0,
-    messagesSent: 0,
-  })
-  const [votes, setVotes] = useState<VoteEntry[]>([])
-  const [tickets, setTickets] = useState<TicketEntry[]>([])
-  const [messages, setMessages] = useState<MessageEntry[]>([])
-  const [account, setAccount] = useState<AccountInfo | null>(null)
-
-  const fetchDashboard = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/dashboard')
-      if (res.ok) {
-        const data = await res.json()
-        setStats(data.stats)
-        setVotes(data.votes)
-        setTickets(data.tickets)
-        setMessages(data.messages)
-        setAccount(data.account)
-      }
-    } catch (err) {
-      console.error('Failed to load dashboard:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const { loading, error, stats, votes, tickets, messages, account, fetchDashboard } = useDashboardData()
 
   useEffect(() => {
     if (!sessionPending && session?.user) {
@@ -131,9 +49,7 @@ export default function DashboardPage() {
   }
 
   if (!session?.user) {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/signin'
-    }
+    router.push('/signin')
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-burgundy-900" />
@@ -207,10 +123,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          <div role="tablist" aria-label="Dashboard sections" className="flex flex-wrap items-center justify-center gap-2">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
+                id={`dashboard-tab-${tab.key}`}
+                role="tab"
+                aria-selected={activeTab === tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                   activeTab === tab.key
@@ -228,6 +147,17 @@ export default function DashboardPage() {
 
       {/* Content */}
       <div className="container mx-auto px-4 py-8">
+        {error && (
+          <div role="alert" className="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-4 flex items-center justify-between">
+            <span>{error}</span>
+            <button
+              onClick={() => fetchDashboard()}
+              className="ml-4 text-sm font-medium underline hover:no-underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
@@ -236,7 +166,7 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
-          <>
+          <div role="tabpanel" aria-labelledby={`dashboard-tab-${activeTab}`}>
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-8">
@@ -700,7 +630,7 @@ export default function DashboardPage() {
                 )}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 

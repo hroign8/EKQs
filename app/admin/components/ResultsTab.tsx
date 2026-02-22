@@ -2,12 +2,14 @@
 
 import NextImage from 'next/image'
 import {
+
   Trophy, Users, BarChart3, Crown, ExternalLink,
   Globe, QrCode, Mail, Ticket, Image as ImageIcon,
 } from 'lucide-react'
 import type { Contestant } from '@/types'
 import type { Category } from '../types'
 import { getVotes } from '../types'
+import { genderTitle } from '@/lib/utils'
 
 interface ResultsTabProps {
   contestantsList: Contestant[]
@@ -119,7 +121,7 @@ export default function ResultsTab({
                             ? 'bg-blue-100 text-blue-700'
                             : 'bg-pink-100 text-pink-700'
                         }`}>
-                          {contestant.gender === 'Male' ? 'King' : 'Queen'}
+                          {genderTitle(contestant.gender)}
                         </span>
                       </div>
                       <p className="text-sm text-gray-500 line-clamp-1 mb-2">{contestant.description}</p>

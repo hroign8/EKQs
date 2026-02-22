@@ -3,21 +3,39 @@ import { NextRequest, NextResponse } from 'next/server'
 /**
  * Middleware for route protection.
  *
- * Better Auth handles session validation server-side via its own API.
- * This middleware guards admin routes by checking cookies exist
- * (a lightweight check — full auth is validated in the API routes).
+ * Admin routes are guarded by calling the internal Better Auth session
+ * endpoint, which cryptographically validates the session token and returns
+ * the user's role. A mere cookie-existence check would allow forged cookies.
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Admin route protection — check for session cookie
-  if (pathname.startsWith('/admin')) {
-    const sessionCookie =
-      request.cookies.get('better-auth.session_token') ||
-      request.cookies.get('__Secure-better-auth.session_token')
+  // Skip the guard for the login page itself — it is the unauthenticated entry point
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    // Validate the session token via the auth API (no Prisma import needed in middleware)
+    try {
+      const sessionRes = await fetch(
+        new URL('/api/auth/get-session', request.url).toString(),
+        {
+          headers: { cookie: request.headers.get('cookie') ?? '' },
+          cache: 'no-store',
+        }
+      )
+      const session = sessionRes.ok ? await sessionRes.json() : null
 
-    if (!sessionCookie) {
-      const signInUrl = new URL('/signin', request.url)
+      if (!session?.user) {
+        const signInUrl = new URL('/admin/login', request.url)
+        signInUrl.searchParams.set('callbackUrl', pathname)
+        return NextResponse.redirect(signInUrl)
+      }
+
+      // Only allow users with the admin role
+      if (session.user.role !== 'admin') {
+        return NextResponse.redirect(new URL('/', request.url))
+      }
+    } catch {
+      // If the session check itself fails, redirect to login conservatively
+      const signInUrl = new URL('/admin/login', request.url)
       signInUrl.searchParams.set('callbackUrl', pathname)
       return NextResponse.redirect(signInUrl)
     }

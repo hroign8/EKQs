@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('[AUTH GET ERROR]', error)
     return NextResponse.json(
-      { error: 'Internal auth error', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Internal auth error' },
       { status: 500 }
     )
   }
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('[AUTH POST ERROR]', error)
     return NextResponse.json(
-      { error: 'Internal auth error', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Internal auth error' },
       { status: 500 }
     )
   }

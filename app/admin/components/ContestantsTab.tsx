@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, Crown } from 'lucide-react'
 import type { Contestant } from '@/types'
 import type { Category } from '../types'
 import { getVotes, getTotalVotes } from '../types'
+import { genderTitle, rankBadgeClasses } from '@/lib/utils'
 
 interface ContestantsTabProps {
   contestantsList: Contestant[]
@@ -39,7 +40,7 @@ export default function ContestantsTab({
         </button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full" aria-label="Contestants leaderboard">
           <thead>
             <tr className="bg-burgundy-50">
               <th className="text-left px-3 sm:px-6 py-3 sm:py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">#</th>
@@ -64,12 +65,7 @@ export default function ContestantsTab({
                   }`}
                 >
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
-                      index === 0 ? 'bg-gold-500 text-burgundy-900' :
-                      index === 1 ? 'bg-gray-200 text-gray-700' :
-                      index === 2 ? 'bg-amber-500 text-white' :
-                      'bg-gray-100 text-gray-500'
-                    }`}>
+                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${rankBadgeClasses(index)}`}>
                       {index + 1}
                     </div>
                   </td>
@@ -91,7 +87,7 @@ export default function ContestantsTab({
                       </div>
                       <div className="min-w-0">
                         <div className="font-bold text-burgundy-900 truncate text-sm sm:text-base">{contestant.name}</div>
-                        <div className="text-xs text-gray-500">{contestant.country} · {contestant.gender === 'Male' ? 'King' : 'Queen'}</div>
+                        <div className="text-xs text-gray-500">{contestant.country} · {genderTitle(contestant.gender)}</div>
                       </div>
                     </div>
                   </td>
@@ -112,12 +108,14 @@ export default function ContestantsTab({
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => onEditContestant(contestant)}
+                        aria-label={`Edit ${contestant.name}`}
                         className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => onDeleteContestant(contestant.id)}
+                        aria-label={`Delete ${contestant.name}`}
                         className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />

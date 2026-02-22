@@ -1,8 +1,12 @@
-'use client'
-
+import type { Metadata } from 'next'
 import { Shield, Eye, Database, Cookie, UserCheck, Globe, Mail } from 'lucide-react'
 import Link from 'next/link'
 import PageHero from '@/components/PageHero'
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy | Eritrean Kings & Queens',
+  description: 'Read our Privacy Policy to understand how we collect, use, and protect your personal data.',
+}
 
 export default function PrivacyPolicyPage() {
   return (

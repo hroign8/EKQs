@@ -5,6 +5,7 @@ import { submitVoteSchema } from '@/lib/validations'
 import { submitOrder, registerIPN } from '@/lib/pesapal'
 import { randomUUID } from 'crypto'
 import { createRateLimiter } from '@/lib/rate-limit'
+import { parseLocalDate } from '@/lib/utils'
 
 const limiter = createRateLimiter('votes', 20, 60_000) // 20 per minute
 
@@ -50,20 +51,17 @@ export async function POST(request: Request) {
       return errorResponse('Package not found')
     }
 
-    // Check if voting is open
+    // findFirst with `isActive: true` already guarantees the event is active;
+    // this single check covers both "no event" and "voting closed" cases.
     const event = await prisma.event.findFirst({ where: { isActive: true } })
     if (!event) {
-      return errorResponse('No active event found')
+      return errorResponse('Voting is currently closed')
     }
 
     // Enforce voting period (dates are DD/MM/YYYY format)
     const now = new Date()
-    const parseDate = (d: string) => {
-      const [day, month, year] = d.split('/').map(Number)
-      return new Date(year, month - 1, day)
-    }
-    const votingStart = parseDate(event.votingStart)
-    const votingEnd = parseDate(event.votingEnd)
+    const votingStart = parseLocalDate(event.votingStart)
+    const votingEnd = parseLocalDate(event.votingEnd)
     votingEnd.setHours(23, 59, 59, 999) // Include the entire end day
     if (now < votingStart || now > votingEnd) {
       return errorResponse('Voting is not currently open')
@@ -109,30 +107,30 @@ export async function POST(request: Request) {
       lastName: session!.user.name?.split(' ').slice(1).join(' '),
     })
 
-    // Create pending transaction record
-    await prisma.pesapalTransaction.create({
-      data: {
-        orderTrackingId: order.order_tracking_id,
-        merchantReference,
-        transactionType: 'vote',
-        amount: pkg.price,
-        description: `${pkg.votes} vote(s) for ${contestant.name}`,
-      },
-    })
-
-    // Create pending vote record
-    await prisma.vote.create({
-      data: {
-        contestantId,
-        categoryId,
-        userId: session!.user.id,
-        packageId,
-        votesCount: pkg.votes,
-        amountPaid: pkg.price,
-        transactionId: order.order_tracking_id,
-        verified: false,
-      },
-    })
+    // Create transaction and pending vote atomically so partial writes never occur
+    await prisma.$transaction([
+      prisma.pesapalTransaction.create({
+        data: {
+          orderTrackingId: order.order_tracking_id,
+          merchantReference,
+          transactionType: 'vote',
+          amount: pkg.price,
+          description: `${pkg.votes} vote(s) for ${contestant.name}`,
+        },
+      }),
+      prisma.vote.create({
+        data: {
+          contestantId,
+          categoryId,
+          userId: session!.user.id,
+          packageId,
+          votesCount: pkg.votes,
+          amountPaid: pkg.price,
+          transactionId: order.order_tracking_id,
+          verified: false,
+        },
+      }),
+    ])
 
     return NextResponse.json({
       success: true,
@@ -175,7 +173,11 @@ export async function GET() {
       result[vc.contestantId][slug] = vc._sum.votesCount || 0
     }
 
-    return NextResponse.json(result)
+    return NextResponse.json(result, {
+      headers: {
+        'Cache-Control': 'public, max-age=30, stale-while-revalidate=60',
+      },
+    })
   } catch (error) {
     console.error('Failed to fetch votes:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

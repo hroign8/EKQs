@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Timer } from 'lucide-react'
-import { formatDateShort } from '@/lib/utils'
+import { formatDateShort, parseLocalDate } from '@/lib/utils'
 
 interface TimeRemaining {
   days: number
@@ -25,8 +25,8 @@ export default function CountdownTimer({ endDate, eventDate }: { endDate: string
 
   useEffect(() => {
     const calculateTimeRemaining = () => {
-      const [day, month, year] = targetDate.split('/').map(Number)
-      const endDateTime = new Date(year, month - 1, day, 23, 59, 59, 999)
+      const base = parseLocalDate(targetDate)
+      const endDateTime = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999)
       const now = new Date()
 
       const difference = endDateTime.getTime() - now.getTime()
@@ -78,7 +78,10 @@ export default function CountdownTimer({ endDate, eventDate }: { endDate: string
         <h2 className="text-sm sm:text-lg font-semibold text-white">Voting Ends {formatDateShort(targetDate)}</h2>
       </div>
       
-      <div className="flex items-center justify-center gap-2 sm:gap-6">
+      <div
+        aria-label={`${timeRemaining.days} days, ${timeRemaining.hours} hours, ${timeRemaining.minutes} minutes remaining`}
+        className="flex items-center justify-center gap-2 sm:gap-6"
+      >
         {/* Days */}
         <div className="text-center">
           <div className="text-3xl sm:text-5xl font-bold text-gold-500 tabular-nums">

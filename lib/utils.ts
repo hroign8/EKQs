@@ -30,3 +30,30 @@ export function formatDate(
 export function formatDateShort(dateStr: string): string {
   return formatDate(dateStr, { year: 'numeric', month: 'long', day: 'numeric' })
 }
+
+/**
+ * Returns the ceremonial title for a contestant based on gender.
+ * Male → "King", Female → "Queen"
+ */
+export function genderTitle(gender: string): string {
+  return gender === 'Male' ? 'King' : 'Queen'
+}
+
+/**
+ * Returns Tailwind classes for a rank badge (1st = gold, 2nd = silver, 3rd = bronze).
+ */
+export function rankBadgeClasses(index: number): string {
+  if (index === 0) return 'bg-gold-500 text-burgundy-900'
+  if (index === 1) return 'bg-gray-200 text-gray-700'
+  if (index === 2) return 'bg-amber-500 text-white'
+  return 'bg-gray-100 text-gray-500'
+}
+
+/**
+ * Parse a DD/MM/YYYY date string into a local-time Date object.
+ * Single shared helper — prevents duplicated parsing logic across API routes and components.
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const [day, month, year] = dateStr.split('/').map(Number)
+  return new Date(year, month - 1, day)
+}

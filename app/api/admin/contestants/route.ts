@@ -1,9 +1,21 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
+import { contestantSchema, updateContestantSchema } from '@/lib/validations'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
+
+/**
+ * Validate actual buffer magic bytes to prevent MIME-type spoofing via the data-URI header.
+ */
+function hasValidMagicBytes(buffer: Buffer, ext: string): boolean {
+  if (ext === 'jpg') return buffer.length >= 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF
+  if (ext === 'png') return buffer.length >= 4 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47
+  if (ext === 'webp') return buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50
+  if (ext === 'gif') return buffer.length >= 4 && buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38
+  return false
+}
 
 /**
  * Save a base64 data URI to disk and return the public URL path.
@@ -34,6 +46,11 @@ async function saveImageToDisk(imageValue: string): Promise<string> {
   // Validate size (max 5MB)
   if (buffer.length > 5 * 1024 * 1024) {
     throw new Error('Image must be less than 5MB')
+  }
+
+  // Verify magic bytes match declared MIME type — prevents MIME spoofing attacks
+  if (!hasValidMagicBytes(buffer, ext)) {
+    throw new Error('Image content does not match the declared image type')
   }
 
   const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'contestants')
@@ -76,31 +93,36 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
 
-    if (!body.name || !body.country || !body.gender) {
-      return errorResponse('Name, country, and gender are required')
+    // Validate all fields first — substitute a placeholder so data-URI images don't
+    // fail the URL format check before we've had a chance to persist them.
+    const rawImage: string = body.image || ''
+    const parsed = contestantSchema.safeParse({
+      ...body,
+      image: rawImage.startsWith('data:') ? 'https://upload.placeholder/img' : rawImage,
+    })
+    if (!parsed.success) {
+      return errorResponse(parsed.error.issues[0]?.message || 'Validation failed')
     }
 
-    if (!['Male', 'Female'].includes(body.gender)) {
-      return errorResponse('Gender must be Male or Female')
-    }
-
-    // Save image to disk if it's base64
-    let imageUrl = body.image || ''
-    if (imageUrl) {
+    // Validation passed — now persist the image to disk if it's a base64 upload.
+    let imageUrl = rawImage
+    if (rawImage.startsWith('data:')) {
       try {
-        imageUrl = await saveImageToDisk(imageUrl)
+        imageUrl = await saveImageToDisk(rawImage)
       } catch (imgErr) {
         return errorResponse(imgErr instanceof Error ? imgErr.message : 'Image upload failed')
       }
     }
 
+    const { name, country, gender, description } = parsed.data
+
     const contestant = await prisma.contestant.create({
       data: {
-        name: body.name,
-        country: body.country,
-        gender: body.gender,
+        name,
+        country,
+        gender,
         image: imageUrl,
-        description: body.description || '',
+        description,
         rank: body.rank ?? null,
       },
     })
@@ -122,10 +144,31 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json()
-    const { id, ...updates } = body
 
-    if (!id) {
-      return errorResponse('Contestant ID is required')
+    // Validate first — substitute a placeholder so data-URI images don't fail URL check.
+    const rawImage: string | undefined = body.image
+    const parsed = updateContestantSchema.safeParse({
+      ...body,
+      ...(rawImage?.startsWith('data:') ? { image: 'https://upload.placeholder/img' } : {}),
+    })
+    if (!parsed.success) {
+      return errorResponse(parsed.error.issues[0]?.message || 'Validation failed')
+    }
+
+    // Validation passed — now persist the image if it's a new base64 upload.
+    let savedImage: string | undefined = rawImage
+    if (rawImage?.startsWith('data:')) {
+      try {
+        savedImage = await saveImageToDisk(rawImage)
+      } catch (imgErr) {
+        return errorResponse(imgErr instanceof Error ? imgErr.message : 'Image upload failed')
+      }
+    }
+
+    const { id, image: _imagePlaceholder, ...restUpdates } = parsed.data
+    const updates = {
+      ...restUpdates,
+      ...(savedImage !== undefined ? { image: savedImage } : {}),
     }
 
     const existing = await prisma.contestant.findUnique({ where: { id } })
@@ -133,27 +176,9 @@ export async function PUT(request: Request) {
       return errorResponse('Contestant not found', 404)
     }
 
-    // Save image to disk if it's base64
-    if (updates.image) {
-      try {
-        updates.image = await saveImageToDisk(updates.image)
-      } catch (imgErr) {
-        return errorResponse(imgErr instanceof Error ? imgErr.message : 'Image upload failed')
-      }
-    }
-
-    // Whitelist allowed fields
-    const allowedFields = ['name', 'country', 'gender', 'image', 'description', 'rank', 'isActive'] as const
-    const data: Record<string, unknown> = {}
-    for (const key of allowedFields) {
-      if (key in updates) {
-        data[key] = updates[key]
-      }
-    }
-
     const contestant = await prisma.contestant.update({
       where: { id },
-      data,
+      data: updates,
     })
 
     return NextResponse.json(contestant)

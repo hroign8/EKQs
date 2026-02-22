@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/api-utils'
+import { manualVoteSchema } from '@/lib/validations'
 
 /**
  * GET /api/admin/votes
@@ -61,6 +62,58 @@ export async function GET(request: NextRequest) {
     })
   } catch (err) {
     console.error('Admin votes fetch error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+/**
+ * POST /api/admin/votes
+ * Admin endpoint — manually record a vote on behalf of a voter.
+ */
+export async function POST(request: NextRequest) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
+  let body: unknown
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  const result = manualVoteSchema.safeParse(body)
+  if (!result.success) {
+    return NextResponse.json({ error: result.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 })
+  }
+
+  const { voterEmail, contestantId, categoryId, packageId } = result.data
+
+  try {
+    // Resolve the user by email (or create a stub if absent)
+    let user = await prisma.user.findUnique({ where: { email: voterEmail } })
+    if (!user) {
+      return NextResponse.json({ error: 'No account found for that email address' }, { status: 404 })
+    }
+
+    // Fetch the package for vote count and price
+    const pkg = await prisma.votingPackage.findUnique({ where: { id: packageId } })
+    if (!pkg || !pkg.isActive) {
+      return NextResponse.json({ error: 'Package not found or inactive' }, { status: 404 })
+    }
+
+    const vote = await prisma.vote.create({
+      data: {
+        userId: user.id,
+        contestantId,
+        categoryId,
+        packageId,
+        votesCount: pkg.votes,
+        amountPaid: pkg.price,
+        verified: true, // admin-entered votes are trusted
+      },
+    })
+
+    return NextResponse.json({ success: true, voteId: vote.id }, { status: 201 })
+  } catch (err) {
+    console.error('Admin manual vote error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

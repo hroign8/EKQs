@@ -1,22 +1,14 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   TrendingUp, Users, Trophy, BarChart3,
   RefreshCw, Download, Settings, Eye,
   Crown, Loader2, DollarSign, Wallet, CreditCard, ArrowUpRight,
 } from 'lucide-react'
-import { useSession } from '@/lib/auth-client'
-import type { Contestant } from '@/types'
 import { isAdmin } from '@/types'
-import type {
-  Category,
-  VotingPackage,
-  VoteLogEntry,
-  AdminTab,
-  ModalType,
-} from './types'
-import { getVotes, getTotalVotes } from './types'
+import type { AdminTab } from './types'
 
 import OverviewTab from './components/OverviewTab'
 import ResultsTab from './components/ResultsTab'
@@ -26,624 +18,27 @@ import RevenueTab from './components/RevenueTab'
 import PackagesTab from './components/PackagesTab'
 import SettingsTab from './components/SettingsTab'
 import AdminModals from './components/AdminModals'
+import { useAdminData } from './hooks/useAdminData'
+
+const tabs: { id: AdminTab; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'contestants', label: 'Participants' },
+  { id: 'results', label: 'Results' },
+  { id: 'packages', label: 'Packages' },
+  { id: 'revenue', label: 'Revenue' },
+  { id: 'votelog', label: 'Vote Log' },
+  { id: 'settings', label: 'Event Settings' },
+]
 
 export default function AdminPage() {
-  const { data: session, isPending: sessionPending } = useSession()
   const [activeTab, setActiveTab] = useState<AdminTab>('overview')
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [votingActive, setVotingActive] = useState(true)
-  const [publicResults, setPublicResults] = useState(false)
-  const [contestantsList, setContestantsList] = useState<Contestant[]>([])
-  const [categoriesList, setCategoriesList] = useState<Category[]>([])
-  const [packagesList, setPackagesList] = useState<VotingPackage[]>([])
-  const [voteLogList, setVoteLogList] = useState<VoteLogEntry[]>([])
-  const [overviewData, setOverviewData] = useState<{ totalContestants: number; totalVotes: number; totalRevenue: number; totalTickets: number; recentMessages: number }>({ totalContestants: 0, totalVotes: 0, totalRevenue: 0, totalTickets: 0, recentMessages: 0 })
-  const [dataLoading, setDataLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [modalType, setModalType] = useState<ModalType>('contestant')
-  const [editingPackage, setEditingPackage] = useState<VotingPackage | null>(null)
-  const [advancedSettings, setAdvancedSettings] = useState({
-    maintenanceMode: false,
-    emailNotifications: true,
-    autoBackup: true,
-    debugMode: false,
-    maxVotesPerUser: '1000',
-    sessionTimeout: '30',
-    apiRateLimit: '100',
-  })
-  const [packageFormData, setPackageFormData] = useState({ name: '', votes: '', price: '' })
-  const [editingContestant, setEditingContestant] = useState<Contestant | null>(null)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [voteFormPackageId, setVoteFormPackageId] = useState('')
-  const [formData, setFormData] = useState({
-    name: '',
-    country: '',
-    gender: '',
-    image: '',
-    description: '',
-  })
-  const [categoryFormData, setCategoryFormData] = useState({ id: '', name: '' })
-  const [voteFormData, setVoteFormData] = useState({
-    voterEmail: '',
-    contestantId: '',
-    categoryId: '',
-  })
-  const [eventFormData, setEventFormData] = useState({
-    name: '',
-    tagline: '',
-    startDate: '',
-    endDate: '',
-    votingStart: '',
-    votingEnd: '',
-  })
-  const [, setIsEditingEvent] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [isUploading, setIsUploading] = useState(false)
-
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // ---------------------------------------------------------------------------
-  // Data fetching
-  // ---------------------------------------------------------------------------
-  const fetchAdminData = useCallback(async () => {
-    setDataLoading(true)
-    try {
-      const [contestantsRes, categoriesRes, packagesRes, votesRes, overviewRes, eventRes] = await Promise.all([
-        fetch('/api/admin/contestants'),
-        fetch('/api/admin/categories'),
-        fetch('/api/admin/packages'),
-        fetch('/api/admin/votes'),
-        fetch('/api/admin/overview'),
-        fetch('/api/admin/event'),
-      ])
-
-      if (contestantsRes.ok) {
-        const data = await contestantsRes.json()
-        setContestantsList(data)
-      }
-      if (categoriesRes.ok) {
-        const data = await categoriesRes.json()
-        setCategoriesList(data)
-        if (data.length > 0 && !selectedCategory) {
-          setSelectedCategory(data[0].slug || data[0].id)
-        }
-      }
-      if (packagesRes.ok) {
-        const data = await packagesRes.json()
-        setPackagesList(data)
-      }
-      if (votesRes.ok) {
-        const data = await votesRes.json()
-        const entries = (data.votes || []).map((v: { id: string; createdAt: string; user?: { email: string }; contestant?: { name: string }; category?: { name: string }; verified: boolean; package?: { id: string; name: string }; votesCount: number; amountPaid: number }) => ({
-          id: v.id,
-          time: new Date(v.createdAt).toLocaleString(),
-          voterEmail: v.user?.email || 'unknown',
-          contestant: v.contestant?.name || 'unknown',
-          category: v.category?.name || 'unknown',
-          verified: v.verified,
-          packageId: v.package?.id || '',
-          packageName: v.package?.name || '',
-          votesCount: v.votesCount,
-          amountPaid: v.amountPaid,
-        }))
-        setVoteLogList(entries)
-      }
-      if (overviewRes.ok) {
-        const data = await overviewRes.json()
-        setOverviewData(data)
-      }
-      if (eventRes.ok) {
-        const data = await eventRes.json()
-        if (data && !data.error) {
-          setEventFormData({
-            name: data.name || '',
-            tagline: data.tagline || '',
-            startDate: data.startDate || '',
-            endDate: data.endDate || '',
-            votingStart: data.votingPeriod?.start || data.votingStart || '',
-            votingEnd: data.votingPeriod?.end || data.votingEnd || '',
-          })
-          setVotingActive(data.isActive ?? true)
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch admin data:', error)
-    } finally {
-      setDataLoading(false)
-    }
-  }, [selectedCategory])
-
-  useEffect(() => {
-    if (!sessionPending && session?.user && isAdmin(session.user)) {
-      fetchAdminData()
-    }
-  }, [sessionPending, session, fetchAdminData])
-
-  // ---------------------------------------------------------------------------
-  // Image upload helpers
-  // ---------------------------------------------------------------------------
-  const processImageFile = (file: File) => {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB')
-      return
-    }
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file')
-      return
-    }
-
-    setIsUploading(true)
-    setUploadProgress(0)
-
-    const reader = new FileReader()
-    reader.onprogress = (event) => {
-      if (event.lengthComputable) {
-        setUploadProgress(Math.round((event.loaded / event.total) * 100))
-      }
-    }
-    reader.onloadend = () => {
-      const base64String = reader.result as string
-      setFormData(prev => ({ ...prev, image: base64String }))
-      setIsUploading(false)
-      setUploadProgress(100)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    processImageFile(file)
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) processImageFile(file)
-  }
-
-  // ---------------------------------------------------------------------------
-  // Tab definitions
-  // ---------------------------------------------------------------------------
-  const tabs: { id: AdminTab; label: string }[] = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'contestants', label: 'Participants' },
-    { id: 'results', label: 'Results' },
-    { id: 'packages', label: 'Packages' },
-    { id: 'revenue', label: 'Revenue' },
-    { id: 'votelog', label: 'Vote Log' },
-    { id: 'settings', label: 'Event Settings' },
-  ]
-
-  // ---------------------------------------------------------------------------
-  // Contestant handlers
-  // ---------------------------------------------------------------------------
-  const handleAddContestant = () => {
-    setEditingContestant(null)
-    setFormData({ name: '', country: '', gender: '', image: '', description: '' })
-    setModalType('contestant')
-    setShowModal(true)
-  }
-
-  const handleEditContestant = (contestant: Contestant) => {
-    setEditingContestant(contestant)
-    setFormData({
-      name: contestant.name,
-      country: contestant.country,
-      gender: contestant.gender,
-      image: contestant.image,
-      description: contestant.description,
-    })
-    setModalType('contestant')
-    setShowModal(true)
-  }
-
-  const handleDeleteContestant = async (id: string) => {
-    if (confirm('Are you sure you want to delete this contestant?')) {
-      try {
-        const res = await fetch(`/api/admin/contestants?id=${id}`, { method: 'DELETE' })
-        if (res.ok) {
-          setContestantsList(contestantsList.filter(c => c.id !== id))
-        } else {
-          const data = await res.json()
-          alert(data.error || 'Failed to delete contestant')
-        }
-      } catch { alert('Failed to delete contestant') }
-    }
-  }
-
-  const handleSaveContestant = async () => {
-    if (!formData.name || !formData.country || !formData.gender) {
-      alert('Please fill in all required fields')
-      return
-    }
-
-    try {
-      if (editingContestant) {
-        const res = await fetch('/api/admin/contestants', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingContestant.id, ...formData }),
-        })
-        if (res.ok) {
-          const updated = await res.json()
-          setContestantsList(contestantsList.map(c => c.id === editingContestant.id ? updated : c))
-        } else {
-          const data = await res.json()
-          alert(data.error || 'Failed to update contestant')
-          return
-        }
-      } else {
-        const res = await fetch('/api/admin/contestants', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
-        })
-        if (res.ok) {
-          const newContestant = await res.json()
-          setContestantsList([...contestantsList, newContestant])
-        } else {
-          const data = await res.json()
-          alert(data.error || 'Failed to add contestant')
-          return
-        }
-      }
-      setShowModal(false)
-      setModalType('contestant')
-    } catch { alert('An error occurred while saving') }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Category handlers
-  // ---------------------------------------------------------------------------
-  const handleAddCategory = () => {
-    setEditingCategory(null)
-    setCategoryFormData({ id: '', name: '' })
-    setModalType('category')
-    setShowModal(true)
-  }
-
-  const handleEditCategory = (category: Category) => {
-    setEditingCategory(category)
-    setCategoryFormData({ id: category.id, name: category.name })
-    setModalType('category')
-    setShowModal(true)
-  }
-
-  const handleDeleteCategory = async (id: string) => {
-    if (confirm('Are you sure you want to delete this category?')) {
-      try {
-        const res = await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' })
-        if (res.ok) {
-          setCategoriesList(categoriesList.filter(c => c.id !== id))
-        } else {
-          const data = await res.json()
-          alert(data.error || 'Failed to delete category')
-        }
-      } catch { alert('Failed to delete category') }
-    }
-  }
-
-  const handleSaveCategory = async () => {
-    if (!categoryFormData.name) {
-      alert('Please enter a category name')
-      return
-    }
-
-    try {
-      if (editingCategory) {
-        const res = await fetch('/api/admin/categories', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingCategory.id, name: categoryFormData.name }),
-        })
-        if (res.ok) {
-          const updated = await res.json()
-          setCategoriesList(categoriesList.map(c => c.id === editingCategory.id ? updated : c))
-        } else {
-          const data = await res.json()
-          alert(data.error || 'Failed to update category')
-          return
-        }
-      } else {
-        const res = await fetch('/api/admin/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: categoryFormData.name }),
-        })
-        if (res.ok) {
-          const newCat = await res.json()
-          setCategoriesList([...categoriesList, newCat])
-        } else {
-          const data = await res.json()
-          alert(data.error || 'Failed to add category')
-          return
-        }
-      }
-      setShowModal(false)
-      setModalType('contestant')
-    } catch { alert('An error occurred while saving') }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Vote handlers
-  // ---------------------------------------------------------------------------
-  const handleAddManualVote = () => {
-    setVoteFormData({ voterEmail: '', contestantId: '', categoryId: '' })
-    setModalType('vote')
-    setShowModal(true)
-  }
-
-  const handleSaveManualVote = async () => {
-    if (!voteFormData.voterEmail || !voteFormData.contestantId || !voteFormData.categoryId || !voteFormPackageId) {
-      alert('Please fill in all fields')
-      return
-    }
-
-    try {
-      const res = await fetch('/api/admin/votes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          voterEmail: voteFormData.voterEmail,
-          contestantId: voteFormData.contestantId,
-          categoryId: voteFormData.categoryId,
-          packageId: voteFormPackageId,
-        }),
-      })
-
-      if (res.ok) {
-        await fetchAdminData()
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Failed to record vote')
-      }
-    } catch { alert('An error occurred while saving the vote') }
-    setShowModal(false)
-    setModalType('contestant')
-  }
-
-  // ---------------------------------------------------------------------------
-  // Event handlers
-  // ---------------------------------------------------------------------------
-  const handleEditEvent = () => {
-    setIsEditingEvent(true)
-    setModalType('event')
-    setShowModal(true)
-  }
-
-  const handleSaveEvent = async () => {
-    try {
-      const res = await fetch('/api/admin/event', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(eventFormData),
-      })
-      if (res.ok) {
-        alert('Event details saved successfully!')
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Failed to save event details')
-      }
-    } catch { alert('An error occurred while saving') }
-    setShowModal(false)
-    setIsEditingEvent(false)
-    setModalType('contestant')
-  }
-
-  // ---------------------------------------------------------------------------
-  // CSV export helpers
-  // ---------------------------------------------------------------------------
-  const escapeCSV = (value: string | number) => {
-    const str = String(value)
-    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-      return `"${str.replace(/"/g, '""')}"`
-    }
-    return str
-  }
-
-  const handleExportCSV = () => {
-    const categoryHeaders = categoriesList.map(cat => cat.name)
-    const headers = ['ID', 'Name', 'Country', 'Gender', ...categoryHeaders, 'Total Votes']
-    const rows = contestantsList.map(c => {
-      const votes = getVotes(c)
-      return [
-        c.id,
-        c.name,
-        c.country,
-        c.gender,
-        ...categoriesList.map(cat => votes[cat.slug || cat.id] || 0),
-        getTotalVotes(c),
-      ].map(escapeCSV)
-    })
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `contestants-${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const handleExportVoteLog = () => {
-    const headers = ['ID', 'Time', 'Voter Email', 'Contestant', 'Category', 'Verified']
-    const rows = voteLogList.map(v => [
-      v.id, v.time, v.voterEmail, v.contestant, v.category, v.verified ? 'Yes' : 'No',
-    ].map(escapeCSV))
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `vote-log-${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const handleResetVotes = async () => {
-    if (confirm('Are you sure you want to reset ALL votes? This action cannot be undone!')) {
-      if (confirm('This will set all contestant votes to 0. Please confirm again.')) {
-        try {
-          const res = await fetch('/api/admin/votes', { method: 'DELETE' })
-          if (res.ok) {
-            await fetchAdminData()
-            alert('All votes have been reset.')
-          } else {
-            const data = await res.json()
-            alert(data.error || 'Failed to reset votes')
-          }
-        } catch { alert('An error occurred while resetting votes') }
-      }
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Modal helpers
-  // ---------------------------------------------------------------------------
-  const handleCloseModal = () => {
-    setShowModal(false)
-    setModalType('contestant')
-    setEditingContestant(null)
-    setEditingCategory(null)
-    setEditingPackage(null)
-    setPackageFormData({ name: '', votes: '', price: '' })
-  }
-
-  const handleOpenModal = (type: ModalType) => {
-    setModalType(type)
-    setShowModal(true)
-  }
-
-  // ---------------------------------------------------------------------------
-  // Package handlers
-  // ---------------------------------------------------------------------------
-  const handleAddPackage = () => {
-    setEditingPackage(null)
-    setPackageFormData({ name: '', votes: '', price: '' })
-    setModalType('package')
-    setShowModal(true)
-  }
-
-  const handleEditPackage = (pkg: VotingPackage) => {
-    setEditingPackage(pkg)
-    setPackageFormData({
-      name: pkg.name,
-      votes: pkg.votes.toString(),
-      price: pkg.price.toString(),
-    })
-    setModalType('package')
-    setShowModal(true)
-  }
-
-  const handleDeletePackage = async (id: string) => {
-    if (confirm('Are you sure you want to delete this package?')) {
-      try {
-        const res = await fetch(`/api/admin/packages?id=${id}`, { method: 'DELETE' })
-        if (res.ok) {
-          setPackagesList(packagesList.filter(p => p.id !== id))
-        } else {
-          const data = await res.json()
-          alert(data.error || 'Failed to delete package')
-        }
-      } catch { alert('Failed to delete package') }
-    }
-  }
-
-  const handleTogglePackage = async (id: string) => {
-    const pkg = packagesList.find(p => p.id === id)
-    if (!pkg) return
-    try {
-      const res = await fetch('/api/admin/packages', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, isActive: !pkg.isActive }),
-      })
-      if (res.ok) {
-        setPackagesList(packagesList.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p))
-      }
-    } catch { alert('Failed to toggle package') }
-  }
-
-  const handleSavePackage = async () => {
-    if (!packageFormData.name || !packageFormData.votes || !packageFormData.price) {
-      alert('Please fill in all fields')
-      return
-    }
-
-    const votes = parseInt(packageFormData.votes)
-    const price = parseFloat(packageFormData.price)
-
-    if (isNaN(votes) || isNaN(price) || votes <= 0 || price < 0) {
-      alert('Please enter valid numbers for votes and price')
-      return
-    }
-
-    try {
-      if (editingPackage) {
-        const res = await fetch('/api/admin/packages', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingPackage.id, name: packageFormData.name, votes, price }),
-        })
-        if (res.ok) {
-          const updated = await res.json()
-          setPackagesList(packagesList.map(p => p.id === editingPackage.id ? updated : p))
-        } else {
-          const data = await res.json()
-          alert(data.error || 'Failed to update package')
-          return
-        }
-      } else {
-        const res = await fetch('/api/admin/packages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: packageFormData.name, votes, price }),
-        })
-        if (res.ok) {
-          const newPkg = await res.json()
-          setPackagesList([...packagesList, newPkg])
-        } else {
-          const data = await res.json()
-          alert(data.error || 'Failed to add package')
-          return
-        }
-      }
-      handleCloseModal()
-    } catch { alert('An error occurred while saving') }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Revenue helpers
-  // ---------------------------------------------------------------------------
-  const calculateTotalRevenue = () =>
-    voteLogList.reduce((total, entry) => total + entry.amountPaid, 0)
-
-  const calculateTotalVotesSold = () =>
-    voteLogList.reduce((total, entry) => total + entry.votesCount, 0)
-
-  const getAverageTransactionValue = () =>
-    voteLogList.length === 0 ? 0 : calculateTotalRevenue() / voteLogList.length
+  const admin = useAdminData()
+  const router = useRouter()
 
   // ---------------------------------------------------------------------------
   // Auth guards
   // ---------------------------------------------------------------------------
-  if (sessionPending) {
+  if (admin.sessionPending) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-burgundy-900" />
@@ -651,9 +46,9 @@ export default function AdminPage() {
     )
   }
 
-  if (!session?.user) {
+  if (!admin.session?.user) {
     if (typeof window !== 'undefined') {
-      window.location.href = '/admin/login'
+      router.push('/admin/login')
     }
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -662,7 +57,7 @@ export default function AdminPage() {
     )
   }
 
-  if (!isAdmin(session.user)) {
+  if (!isAdmin(admin.session.user)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
@@ -674,7 +69,7 @@ export default function AdminPage() {
             You do not have administrator privileges. Only admin accounts can access this dashboard.
           </p>
           <button
-            onClick={() => { window.location.href = '/' }}
+            onClick={() => router.push('/')}
             className="bg-burgundy-900 hover:bg-burgundy-800 text-white px-6 py-3 rounded-full font-semibold transition-colors"
           >
             Return to Home
@@ -684,7 +79,7 @@ export default function AdminPage() {
     )
   }
 
-  if (dataLoading) {
+  if (admin.dataLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -716,10 +111,10 @@ export default function AdminPage() {
           {/* Action Bar */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             <div className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-medium ${
-              votingActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+              admin.votingActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
             }`}>
-              <div className={`w-2 h-2 rounded-full animate-pulse ${votingActive ? 'bg-green-400' : 'bg-red-400'}`}></div>
-              <span>{votingActive ? 'Voting Open' : 'Voting Closed'}</span>
+              <div className={`w-2 h-2 rounded-full animate-pulse ${admin.votingActive ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <span>{admin.votingActive ? 'Voting Open' : 'Voting Closed'}</span>
             </div>
 
             <a
@@ -740,7 +135,7 @@ export default function AdminPage() {
             </button>
 
             <button
-              onClick={handleExportCSV}
+              onClick={admin.handleExportCSV}
               className="flex items-center gap-2 px-4 py-2.5 bg-white/10 rounded-full hover:bg-white/20 transition-colors text-white font-medium"
             >
               <Download className="w-4 h-4" />
@@ -762,10 +157,12 @@ export default function AdminPage() {
         {/* Tabs Navigation */}
         <div className="mb-6 sm:mb-8">
           <div className="bg-white rounded-2xl p-1.5 sm:p-2 overflow-x-auto scroll-container">
-            <div className="flex gap-1 sm:gap-2 min-w-max">
+            <div className="flex gap-1 sm:gap-2 min-w-max" role="tablist">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-3 sm:px-5 py-2 sm:py-2.5 rounded-full font-medium transition-all text-sm sm:text-base whitespace-nowrap ${
                     activeTab === tab.id
@@ -790,7 +187,7 @@ export default function AdminPage() {
               <div>
                 <h3 className="text-burgundy-200 text-sm font-medium mb-1">Revenue from Voting</h3>
                 <p className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
-                  ${calculateTotalRevenue().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${admin.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
@@ -807,7 +204,7 @@ export default function AdminPage() {
                 <CreditCard className="w-4 h-4" />
                 <span>Transactions</span>
               </div>
-              <p className="text-2xl font-black text-white">{voteLogList.length.toLocaleString()}</p>
+              <p className="text-2xl font-black text-white">{admin.voteLogList.length.toLocaleString()}</p>
             </div>
 
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
@@ -815,7 +212,7 @@ export default function AdminPage() {
                 <TrendingUp className="w-4 h-4" />
                 <span>Votes Sold</span>
               </div>
-              <p className="text-2xl font-black text-white">{calculateTotalVotesSold().toLocaleString()}</p>
+              <p className="text-2xl font-black text-white">{admin.totalVotesSold.toLocaleString()}</p>
             </div>
 
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
@@ -823,7 +220,7 @@ export default function AdminPage() {
                 <DollarSign className="w-4 h-4" />
                 <span>Avg Transaction</span>
               </div>
-              <p className="text-2xl font-black text-white">${getAverageTransactionValue().toFixed(2)}</p>
+              <p className="text-2xl font-black text-white">${admin.averageTransactionValue.toFixed(2)}</p>
             </div>
 
             <button
@@ -849,7 +246,7 @@ export default function AdminPage() {
                 <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-gold-600" />
               </div>
               <div className="min-w-0">
-                <div className="text-lg sm:text-2xl font-black text-burgundy-900 truncate">{overviewData.totalVotes.toLocaleString()}</div>
+                <div className="text-lg sm:text-2xl font-black text-burgundy-900 truncate">{admin.overviewData.totalVotes.toLocaleString()}</div>
                 <div className="text-xs sm:text-sm text-gray-500">Total Votes</div>
               </div>
             </div>
@@ -860,7 +257,7 @@ export default function AdminPage() {
                 <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
               <div className="min-w-0">
-                <div className="text-lg sm:text-2xl font-black text-burgundy-900 truncate">{overviewData.totalTickets}</div>
+                <div className="text-lg sm:text-2xl font-black text-burgundy-900 truncate">{admin.overviewData.totalTickets}</div>
                 <div className="text-xs sm:text-sm text-gray-500">Ticket Sales</div>
               </div>
             </div>
@@ -871,7 +268,7 @@ export default function AdminPage() {
                 <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               </div>
               <div className="min-w-0">
-                <div className="text-lg sm:text-2xl font-black text-burgundy-900 truncate">{contestantsList.length}</div>
+                <div className="text-lg sm:text-2xl font-black text-burgundy-900 truncate">{admin.contestantsList.length}</div>
                 <div className="text-xs sm:text-sm text-gray-500">Participants</div>
               </div>
             </div>
@@ -882,7 +279,7 @@ export default function AdminPage() {
                 <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
               </div>
               <div className="min-w-0">
-                <div className="text-lg sm:text-2xl font-black text-burgundy-900 truncate">{categoriesList.length}</div>
+                <div className="text-lg sm:text-2xl font-black text-burgundy-900 truncate">{admin.categoriesList.length}</div>
                 <div className="text-xs sm:text-sm text-gray-500">Categories</div>
               </div>
             </div>
@@ -892,117 +289,117 @@ export default function AdminPage() {
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <OverviewTab
-            onAddContestant={handleAddContestant}
-            onAddCategory={handleAddCategory}
-            onExportCSV={handleExportCSV}
-            onAddManualVote={handleAddManualVote}
+            onAddContestant={admin.handleAddContestant}
+            onAddCategory={admin.handleAddCategory}
+            onExportCSV={admin.handleExportCSV}
+            onAddManualVote={admin.handleAddManualVote}
           />
         )}
 
         {activeTab === 'results' && (
           <ResultsTab
-            contestantsList={contestantsList}
-            categoriesList={categoriesList}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
+            contestantsList={admin.contestantsList}
+            categoriesList={admin.categoriesList}
+            selectedCategory={admin.selectedCategory}
+            onSelectCategory={admin.setSelectedCategory}
           />
         )}
 
         {activeTab === 'contestants' && (
           <ContestantsTab
-            contestantsList={contestantsList}
-            categoriesList={categoriesList}
-            onAddContestant={handleAddContestant}
-            onEditContestant={handleEditContestant}
-            onDeleteContestant={handleDeleteContestant}
+            contestantsList={admin.contestantsList}
+            categoriesList={admin.categoriesList}
+            onAddContestant={admin.handleAddContestant}
+            onEditContestant={admin.handleEditContestant}
+            onDeleteContestant={admin.handleDeleteContestant}
           />
         )}
 
         {activeTab === 'votelog' && (
           <VoteLogTab
-            voteLogList={voteLogList}
-            onAddManualVote={handleAddManualVote}
-            onExportVoteLog={handleExportVoteLog}
+            voteLogList={admin.voteLogList}
+            onAddManualVote={admin.handleAddManualVote}
+            onExportVoteLog={admin.handleExportVoteLog}
           />
         )}
 
         {activeTab === 'revenue' && (
           <RevenueTab
-            voteLogList={voteLogList}
-            packagesList={packagesList}
+            voteLogList={admin.voteLogList}
+            packagesList={admin.packagesList}
             onSwitchTab={setActiveTab}
           />
         )}
 
         {activeTab === 'packages' && (
           <PackagesTab
-            packagesList={packagesList}
-            onAddPackage={handleAddPackage}
-            onEditPackage={handleEditPackage}
-            onDeletePackage={handleDeletePackage}
-            onTogglePackage={handleTogglePackage}
+            packagesList={admin.packagesList}
+            onAddPackage={admin.handleAddPackage}
+            onEditPackage={admin.handleEditPackage}
+            onDeletePackage={admin.handleDeletePackage}
+            onTogglePackage={admin.handleTogglePackage}
           />
         )}
 
         {activeTab === 'settings' && (
           <SettingsTab
-            categoriesList={categoriesList}
-            packagesList={packagesList}
-            votingActive={votingActive}
-            publicResults={publicResults}
-            eventFormData={eventFormData}
-            onSetVotingActive={setVotingActive}
-            onSetPublicResults={setPublicResults}
-            onEditEvent={handleEditEvent}
-            onAddCategory={handleAddCategory}
-            onEditCategory={handleEditCategory}
-            onDeleteCategory={handleDeleteCategory}
-            onResetVotes={handleResetVotes}
-            onExportCSV={handleExportCSV}
+            categoriesList={admin.categoriesList}
+            packagesList={admin.packagesList}
+            votingActive={admin.votingActive}
+            publicResults={admin.publicResults}
+            eventFormData={admin.eventFormData}
+            onSetVotingActive={admin.handleToggleVotingActive}
+            onSetPublicResults={admin.handleTogglePublicResults}
+            onEditEvent={admin.handleEditEvent}
+            onAddCategory={admin.handleAddCategory}
+            onEditCategory={admin.handleEditCategory}
+            onDeleteCategory={admin.handleDeleteCategory}
+            onResetVotes={admin.handleResetVotes}
+            onExportCSV={admin.handleExportCSV}
             onSwitchTab={setActiveTab}
-            onOpenModal={handleOpenModal}
+            onOpenModal={admin.handleOpenModal}
           />
         )}
       </div>
 
       {/* Modals */}
       <AdminModals
-        showModal={showModal}
-        modalType={modalType}
-        onClose={handleCloseModal}
-        formData={formData}
-        setFormData={setFormData}
-        editingContestant={editingContestant}
-        onSaveContestant={handleSaveContestant}
-        fileInputRef={fileInputRef}
-        isDragging={isDragging}
-        isUploading={isUploading}
-        uploadProgress={uploadProgress}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onImageUpload={handleImageUpload}
-        categoryFormData={categoryFormData}
-        setCategoryFormData={setCategoryFormData}
-        editingCategory={editingCategory}
-        onSaveCategory={handleSaveCategory}
-        voteFormData={voteFormData}
-        setVoteFormData={setVoteFormData}
-        voteFormPackageId={voteFormPackageId}
-        setVoteFormPackageId={setVoteFormPackageId}
-        contestantsList={contestantsList}
-        categoriesList={categoriesList}
-        packagesList={packagesList}
-        onSaveManualVote={handleSaveManualVote}
-        eventFormData={eventFormData}
-        setEventFormData={setEventFormData}
-        onSaveEvent={handleSaveEvent}
-        packageFormData={packageFormData}
-        setPackageFormData={setPackageFormData}
-        editingPackage={editingPackage}
-        onSavePackage={handleSavePackage}
-        advancedSettings={advancedSettings}
-        setAdvancedSettings={setAdvancedSettings}
+        showModal={admin.showModal}
+        modalType={admin.modalType}
+        onClose={admin.handleCloseModal}
+        formData={admin.formData}
+        setFormData={admin.setFormData}
+        editingContestant={admin.editingContestant}
+        onSaveContestant={admin.handleSaveContestant}
+        fileInputRef={admin.fileInputRef}
+        isDragging={admin.isDragging}
+        isUploading={admin.isUploading}
+        uploadProgress={admin.uploadProgress}
+        onDragOver={admin.handleDragOver}
+        onDragLeave={admin.handleDragLeave}
+        onDrop={admin.handleDrop}
+        onImageUpload={admin.handleImageUpload}
+        categoryFormData={admin.categoryFormData}
+        setCategoryFormData={admin.setCategoryFormData}
+        editingCategory={admin.editingCategory}
+        onSaveCategory={admin.handleSaveCategory}
+        voteFormData={admin.voteFormData}
+        setVoteFormData={admin.setVoteFormData}
+        voteFormPackageId={admin.voteFormPackageId}
+        setVoteFormPackageId={admin.setVoteFormPackageId}
+        contestantsList={admin.contestantsList}
+        categoriesList={admin.categoriesList}
+        packagesList={admin.packagesList}
+        onSaveManualVote={admin.handleSaveManualVote}
+        eventFormData={admin.eventFormData}
+        setEventFormData={admin.setEventFormData}
+        onSaveEvent={admin.handleSaveEvent}
+        packageFormData={admin.packageFormData}
+        setPackageFormData={admin.setPackageFormData}
+        editingPackage={admin.editingPackage}
+        onSavePackage={admin.handleSavePackage}
+        advancedSettings={admin.advancedSettings}
+        setAdvancedSettings={admin.setAdvancedSettings}
       />
     </div>
   )

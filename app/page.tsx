@@ -9,7 +9,7 @@ import CountdownTimer from '@/components/CountdownTimer'
 import Link from 'next/link'
 import type { Contestant } from '@/types'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { formatDate } from '@/lib/utils'
+import { formatDate, genderTitle } from '@/lib/utils'
 
 // Lazy load the voting modal since it's not needed on initial render
 const VotingModal = dynamic(() => import('@/components/VotingModal'), {
@@ -81,7 +81,7 @@ export default function Home() {
       {/* Countdown Timer */}
       {eventData && (
         <div className="container mx-auto px-4 py-8">
-          <CountdownTimer endDate={eventData.votingPeriod.end} eventDate={eventData.startDate} />
+          <CountdownTimer endDate={eventData.votingEnd} eventDate={eventData.startDate} />
         </div>
       )}
 
@@ -154,7 +154,7 @@ export default function Home() {
                   <h3 className="font-bold text-lg text-burgundy-900 group-hover:text-gold-600 transition-colors">
                     {contestant.name}
                   </h3>
-                  <p className="text-sm text-gray-600">{contestant.gender === 'Male' ? 'King' : 'Queen'} Contestant</p>
+                  <p className="text-sm text-gray-600">{genderTitle(contestant.gender)} Contestant</p>
                 </div>
               </Link>
             ))}

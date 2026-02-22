@@ -1,5 +1,3 @@
-'use client'
-
 import {
   Crown,
   Heart,
@@ -22,6 +20,12 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import PageHero from '@/components/PageHero'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Sponsors | Eritrean Kings & Queens',
+  description: 'Meet the sponsors and partners who make the Eritrean Kings & Queens pageant possible.',
+}
 
 interface SponsorItem {
   name: string

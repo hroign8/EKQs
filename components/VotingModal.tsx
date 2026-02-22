@@ -1,28 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useReducer, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, Check, ChevronLeft, Crown, Heart, Loader2, LogIn } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
-import type { Contestant } from '@/types'
+import type { Contestant, VotingCategory, VotingPackage } from '@/types'
 import Link from 'next/link'
 
 type Step = 'package' | 'category' | 'confirm' | 'success'
-
-interface VotingPackage {
-  id: string
-  name: string
-  slug: string
-  votes: number
-  price: number
-  popular?: boolean
-}
-
-interface VotingCategory {
-  id: string
-  name: string
-  slug: string
-}
 
 interface CurrencyInfo {
   code: string
@@ -45,18 +30,120 @@ interface VotingModalProps {
   onSuccess?: () => void
 }
 
+// ── Step-machine reducer ────────────────────────────────────────────────────
+
+export interface ModalState {
+  step: Step
+  selectedPackage: VotingPackage | null
+  selectedCategory: VotingCategory | null
+}
+
+export type ModalAction =
+  | { type: 'SELECT_PACKAGE'; payload: VotingPackage }
+  | { type: 'SELECT_CATEGORY'; payload: VotingCategory }
+  | { type: 'CONFIRM_PACKAGE' }
+  | { type: 'CONFIRM_CATEGORY' }
+  | { type: 'BACK_TO_PACKAGE' }
+  | { type: 'BACK_TO_CATEGORY' }
+  | { type: 'SUCCESS' }
+  | { type: 'RESET' }
+
+export const initialModalState: ModalState = {
+  step: 'package',
+  selectedPackage: null,
+  selectedCategory: null,
+}
+
+export function modalReducer(state: ModalState, action: ModalAction): ModalState {
+  switch (action.type) {
+    case 'SELECT_PACKAGE':
+      return { ...state, selectedPackage: action.payload }
+    case 'SELECT_CATEGORY':
+      return { ...state, selectedCategory: action.payload }
+    case 'CONFIRM_PACKAGE':
+      return state.selectedPackage ? { ...state, step: 'category' } : state
+    case 'CONFIRM_CATEGORY':
+      return state.selectedCategory ? { ...state, step: 'confirm' } : state
+    case 'BACK_TO_PACKAGE':
+      return { ...state, step: 'package' }
+    case 'BACK_TO_CATEGORY':
+      return { ...state, step: 'category' }
+    case 'SUCCESS':
+      return { ...state, step: 'success' }
+    case 'RESET':
+      return initialModalState
+    default:
+      return state
+  }
+}
+
+// ── Focus trap helpers ──────────────────────────────────────────────────────
+
+const FOCUSABLE_SELECTORS =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+// ── Module-level exchange rate cache (TTL: 10 minutes) ─────────────────────
+let exchangeRateCache: { rates: Record<string, number>; fetchedAt: number } | null = null
+const EXCHANGE_RATE_TTL = 10 * 60 * 1000
+
 export default function VotingModal({ contestant, onClose, onSuccess }: VotingModalProps) {
   const router = useRouter()
   const { data: session } = useSession()
-  const [step, setStep] = useState<Step>('package')
-  const [selectedPackage, setSelectedPackage] = useState<VotingPackage | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<VotingCategory | null>(null)
+  const [modalState, dispatch] = useReducer(modalReducer, initialModalState)
+  const { step, selectedPackage, selectedCategory } = modalState
+
   const [packages, setPackages] = useState<VotingPackage[]>([])
   const [categories, setCategories] = useState<VotingCategory[]>([])
   const [currency, setCurrency] = useState<CurrencyInfo>({ code: 'USD', symbol: '$', rate: 1 })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  // ── Focus trap ─────────────────────────────────────────────────────────────
+  const modalRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement
+
+    const frame = requestAnimationFrame(() => {
+      const first = modalRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTORS)?.[0]
+      first?.focus()
+    })
+
+    return () => {
+      cancelAnimationFrame(frame)
+      previousFocusRef.current?.focus()
+    }
+  }, [])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      onClose()
+      return
+    }
+    if (e.key !== 'Tab') return
+
+    const focusable = Array.from(
+      modalRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTORS) ?? []
+    )
+    if (focusable.length === 0) return
+
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+  }, [onClose])
 
   useEffect(() => {
     const init = async () => {
@@ -73,7 +160,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
         if (catRes.ok) {
           const catData = await catRes.json()
           setCategories(catData)
-          if (catData.length > 0) setSelectedCategory(catData[0])
+          if (catData.length > 0) dispatch({ type: 'SELECT_CATEGORY', payload: catData[0] })
         }
 
         let detectedCurrency = 'USD'
@@ -95,10 +182,16 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
         }
 
         try {
-          const rateRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
-          if (rateRes.ok) {
-            const rateData = await rateRes.json()
-            const rate = rateData?.rates?.[detectedCurrency] || 1
+          // Reuse cached rates if still fresh (TTL: 10 minutes)
+          if (!exchangeRateCache || Date.now() - exchangeRateCache.fetchedAt >= EXCHANGE_RATE_TTL) {
+            const rateRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
+            if (rateRes.ok) {
+              const rateData = await rateRes.json()
+              exchangeRateCache = { rates: rateData.rates ?? {}, fetchedAt: Date.now() }
+            }
+          }
+          if (exchangeRateCache) {
+            const rate = exchangeRateCache.rates[detectedCurrency] || 1
             const symbol = currencySymbols[detectedCurrency] || detectedCurrency
             setCurrency({ code: detectedCurrency, symbol, rate })
           }
@@ -120,14 +213,6 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
       return `${currency.symbol}${Math.round(localPrice).toLocaleString()}`
     }
     return `${currency.symbol}${localPrice.toFixed(2)}`
-  }
-
-  const handleSelectPackage = () => {
-    if (selectedPackage) setStep('category')
-  }
-
-  const handleSelectCategory = () => {
-    if (selectedCategory) setStep('confirm')
   }
 
   const handleSubmitVote = async () => {
@@ -162,7 +247,8 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
       }
 
       if (data.free) {
-        setStep('success')
+        onSuccess?.()
+        dispatch({ type: 'SUCCESS' })
         setSubmitting(false)
         return
       }
@@ -172,7 +258,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
         return
       }
 
-      setStep('success')
+      dispatch({ type: 'SUCCESS' })
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -182,17 +268,25 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
 
   if (!session?.user && step === 'confirm') {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="voting-modal-signin-title"
+        onKeyDown={handleKeyDown}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      >
         <div className="bg-white rounded-2xl w-full max-w-md relative overflow-hidden">
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors z-10"
           >
             <X className="w-5 h-5" />
           </button>
           <div className="bg-burgundy-900 px-6 py-8 text-center">
             <LogIn className="w-12 h-12 text-gold-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">Sign In Required</h2>
+            <h2 id="voting-modal-signin-title" className="text-2xl font-bold text-white mb-2">Sign In Required</h2>
             <p className="text-burgundy-200">You need to be signed in to vote</p>
           </div>
           <div className="p-6 text-center">
@@ -217,10 +311,18 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="voting-modal-title"
+      onKeyDown={handleKeyDown}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+    >
       <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-4xl relative overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
+          aria-label="Close dialog"
           className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors z-10"
         >
           <X className="w-5 h-5" />
@@ -241,7 +343,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                     <Crown className="w-5 h-5 text-gold-500" />
                     <div className="h-px w-8 bg-gold-500"></div>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                  <h2 id="voting-modal-title" className="text-2xl sm:text-3xl font-bold text-white mb-2">
                     Vote for {contestant?.name || 'Contestant'}
                   </h2>
                   <p className="text-burgundy-200">Select a voting package to support your favorite</p>
@@ -255,7 +357,8 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                     {packages.map((pkg) => (
                       <button
                         key={pkg.id}
-                        onClick={() => setSelectedPackage(pkg)}
+                        onClick={() => dispatch({ type: 'SELECT_PACKAGE', payload: pkg })}
+                        aria-pressed={selectedPackage?.id === pkg.id}
                         className={`relative rounded-xl sm:rounded-2xl transition-all p-3 sm:p-4 ${
                           selectedPackage?.id === pkg.id
                             ? 'bg-gold-50 ring-2 ring-gold-500'
@@ -297,7 +400,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                   )}
 
                   <button
-                    onClick={handleSelectPackage}
+                    onClick={() => dispatch({ type: 'CONFIRM_PACKAGE' })}
                     disabled={!selectedPackage}
                     className="w-full bg-gold-500 text-burgundy-900 py-4 rounded-full font-bold hover:bg-gold-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
                   >
@@ -317,7 +420,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                     <Crown className="w-5 h-5 text-gold-500" />
                     <div className="h-px w-8 bg-gold-500"></div>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Choose Category</h2>
+                  <h2 id="voting-modal-title" className="text-2xl sm:text-3xl font-bold text-white mb-2">Choose Category</h2>
                   <p className="text-burgundy-200">Select which category to vote in</p>
                 </div>
 
@@ -326,7 +429,8 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                     {categories.map((cat) => (
                       <button
                         key={cat.id}
-                        onClick={() => setSelectedCategory(cat)}
+                        onClick={() => dispatch({ type: 'SELECT_CATEGORY', payload: cat })}
+                        aria-pressed={selectedCategory?.id === cat.id}
                         className={`w-full text-left rounded-2xl transition-all p-4 flex items-center justify-between ${
                           selectedCategory?.id === cat.id
                             ? 'bg-gold-50 ring-2 ring-gold-500'
@@ -344,7 +448,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                   </div>
 
                   <button
-                    onClick={handleSelectCategory}
+                    onClick={() => dispatch({ type: 'CONFIRM_CATEGORY' })}
                     disabled={!selectedCategory}
                     className="w-full bg-gold-500 text-burgundy-900 py-4 rounded-full font-bold hover:bg-gold-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -352,7 +456,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                   </button>
 
                   <button
-                    onClick={() => setStep('package')}
+                    onClick={() => dispatch({ type: 'BACK_TO_PACKAGE' })}
                     className="w-full mt-4 text-sm text-gray-500 hover:text-burgundy-900 transition-colors inline-flex items-center justify-center gap-1"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -370,7 +474,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                     <Heart className="w-5 h-5 text-gold-500" />
                     <div className="h-px w-8 bg-gold-500"></div>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Confirm Vote</h2>
+                  <h2 id="voting-modal-title" className="text-2xl sm:text-3xl font-bold text-white mb-2">Confirm Vote</h2>
                   <p className="text-burgundy-200">Review your selection before proceeding</p>
                 </div>
 
@@ -418,7 +522,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                   </button>
 
                   <button
-                    onClick={() => setStep('category')}
+                    onClick={() => dispatch({ type: 'BACK_TO_CATEGORY' })}
                     className="w-full mt-4 text-sm text-gray-500 hover:text-burgundy-900 transition-colors inline-flex items-center justify-center gap-1"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -434,7 +538,7 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
                   <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Check className="w-8 h-8 text-white" strokeWidth={3} />
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Vote Cast Successfully!</h2>
+                  <h2 id="voting-modal-title" className="text-2xl sm:text-3xl font-bold text-white mb-2">Vote Cast Successfully!</h2>
                   <p className="text-burgundy-200">Thank you for supporting {contestant?.name}!</p>
                 </div>
 

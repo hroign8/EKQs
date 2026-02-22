@@ -1,4 +1,4 @@
-import { escapeHtml, formatDate, formatDateShort } from './utils'
+import { escapeHtml, formatDate, formatDateShort, genderTitle, rankBadgeClasses } from './utils'
 
 describe('escapeHtml', () => {
   it('escapes ampersands', () => {
@@ -64,5 +64,37 @@ describe('formatDateShort', () => {
     expect(result).toContain('2025')
     // Should not include weekday
     expect(result).not.toMatch(/Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/)
+  })
+})
+
+describe('genderTitle', () => {
+  it('returns King for Male', () => {
+    expect(genderTitle('Male')).toBe('King')
+  })
+
+  it('returns Queen for Female', () => {
+    expect(genderTitle('Female')).toBe('Queen')
+  })
+
+  it('returns Queen for any non-Male value', () => {
+    expect(genderTitle('Other')).toBe('Queen')
+  })
+})
+
+describe('rankBadgeClasses', () => {
+  it('returns gold classes for index 0', () => {
+    expect(rankBadgeClasses(0)).toContain('gold')
+  })
+
+  it('returns silver classes for index 1', () => {
+    expect(rankBadgeClasses(1)).toContain('gray-200')
+  })
+
+  it('returns bronze classes for index 2', () => {
+    expect(rankBadgeClasses(2)).toContain('amber')
+  })
+
+  it('returns default classes for index 3+', () => {
+    expect(rankBadgeClasses(5)).toContain('gray-100')
   })
 })

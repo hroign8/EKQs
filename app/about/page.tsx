@@ -1,8 +1,12 @@
-'use client'
-
+import type { Metadata } from 'next'
 import { Crown, Heart, Award, Camera, Clock, Star, Users, Mic, Music, Utensils } from 'lucide-react'
 import Link from 'next/link'
 import PageHero from '@/components/PageHero'
+
+export const metadata: Metadata = {
+  title: 'About Us | Eritrean Kings & Queens',
+  description: 'Learn about the Eritrean Kings & Queens pageant — our mission, story, and the talent and culture we celebrate.',
+}
 
 export default function AboutPage() {
   return (
