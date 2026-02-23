@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket as TicketIcon, Check, Crown, Star, Users, Calendar, MapPin, Loader2 } from 'lucide-react';
 import { useSession } from '@/lib/auth-client';
-import { useEvent } from '@/lib/hooks';
+import { useEvent, useCurrency } from '@/lib/hooks';
 import Link from 'next/link';
 import { formatDateShort } from '@/lib/utils';
 import PageHero from '@/components/PageHero';
@@ -21,6 +21,7 @@ interface Ticket {
 const TicketingPage: React.FC = () => {
   const { data: session } = useSession();
   const { data: eventData } = useEvent();
+  const { currency, formatPrice } = useCurrency();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -42,14 +43,14 @@ const TicketingPage: React.FC = () => {
             price: t.price,
             features: typeof t.features === 'string' ? JSON.parse(t.features) : t.features || [],
             popular: t.popular || false,
-            icon: t.name === 'VVIP' ? 'crown' : t.name === 'VIP' ? 'star' : 'ticket',
+            icon: t.name === 'Table' ? 'crown' : t.name === 'VIP' ? 'star' : 'ticket',
           }));
           setTickets(mapped);
         }
       } catch {
         // Fallback to hardcoded tickets if API fails
         setTickets([
-          { id: '1', name: 'VVIP', price: 50, features: ['Premium front-row seating', 'Backstage access', 'Meet & greet with contestants', 'Exclusive gift bag', 'Priority entry', 'Complimentary drinks'], popular: true, icon: 'crown' },
+          { id: '1', name: 'Table', price: 50, features: ['Premium front-row seating', 'Backstage access', 'Meet & greet with contestants', 'Exclusive gift bag', 'Priority entry', 'Complimentary drinks'], popular: true, icon: 'crown' },
           { id: '2', name: 'VIP', price: 30, features: ['Reserved seating', 'Early entry', 'Event program', 'Commemorative badge', 'Refreshments included'], icon: 'star' },
           { id: '3', name: 'General', price: 10, features: ['General admission', 'Event access', 'Standing area', 'Complimentary refreshments'], icon: 'ticket' },
         ]);
@@ -170,6 +171,9 @@ const TicketingPage: React.FC = () => {
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold text-burgundy-900 mb-2">Choose Your Experience</h2>
           <p className="text-gray-600">Select the ticket that best suits you</p>
+          {currency.code !== 'USD' && (
+            <p className="text-sm text-gray-400 mt-2">Prices shown in {currency.code}</p>
+          )}
         </div>
         
         {/* Ticket Options */}
@@ -201,7 +205,7 @@ const TicketingPage: React.FC = () => {
                   </div>
                   <h3 className="text-2xl font-bold text-burgundy-900 mb-1">{ticket.name}</h3>
                   <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-4xl font-black text-gold-500">${ticket.price}</span>
+                    <span className="text-4xl font-black text-gold-500">{formatPrice(ticket.price)}</span>
                     <span className="text-gray-500 text-sm">/person</span>
                   </div>
                 </div>
@@ -251,7 +255,7 @@ const TicketingPage: React.FC = () => {
                 <div className="text-sm text-gray-500 mb-2">Selected Ticket</div>
                 <div className="bg-gray-50 rounded-xl px-4 py-3">
                   <p className="text-xl font-bold text-burgundy-900">{selectedTicket.name}</p>
-                  <p className="text-sm text-gray-600">${selectedTicket.price} each</p>
+                  <p className="text-sm text-gray-600">{formatPrice(selectedTicket.price)} each</p>
                 </div>
               </div>
               
@@ -271,7 +275,7 @@ const TicketingPage: React.FC = () => {
               <div className="text-center">
                 <div className="text-sm text-gray-500 mb-2">Total Amount</div>
                 <div className="bg-gold-50 rounded-xl px-4 py-3">
-                  <p className="text-3xl font-black text-gold-500">${total}</p>
+                  <p className="text-3xl font-black text-gold-500">{formatPrice(total)}</p>
                 </div>
               </div>
             </div>

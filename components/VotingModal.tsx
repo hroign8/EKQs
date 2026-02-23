@@ -4,25 +4,11 @@ import { useState, useEffect, useReducer, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, Check, ChevronLeft, Crown, Heart, Loader2, LogIn } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
+import { useCurrency } from '@/lib/hooks'
 import type { Contestant, VotingCategory, VotingPackage } from '@/types'
 import Link from 'next/link'
 
 type Step = 'package' | 'category' | 'confirm' | 'success'
-
-interface CurrencyInfo {
-  code: string
-  symbol: string
-  rate: number
-}
-
-const currencySymbols: Record<string, string> = {
-  USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥', INR: '₹', 
-  AUD: 'A$', CAD: 'C$', CHF: 'CHF', KRW: '₩', SGD: 'S$', HKD: 'HK$',
-  SEK: 'kr', NOK: 'kr', DKK: 'kr', NZD: 'NZ$', ZAR: 'R', MXN: 'MX$',
-  BRL: 'R$', RUB: '₽', TRY: '₺', PLN: 'zł', THB: '฿', MYR: 'RM',
-  PHP: '₱', IDR: 'Rp', VND: '₫', AED: 'د.إ', SAR: '﷼', EGP: 'E£',
-  NGN: '₦', KES: 'KSh', GHS: 'GH₵', ETB: 'Br', ERN: 'Nfk', UGX: 'UGX'
-}
 
 interface VotingModalProps {
   contestant: Contestant | null
@@ -82,19 +68,15 @@ export function modalReducer(state: ModalState, action: ModalAction): ModalState
 const FOCUSABLE_SELECTORS =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-// ── Module-level exchange rate cache (TTL: 10 minutes) ─────────────────────
-let exchangeRateCache: { rates: Record<string, number>; fetchedAt: number } | null = null
-const EXCHANGE_RATE_TTL = 10 * 60 * 1000
-
 export default function VotingModal({ contestant, onClose, onSuccess }: VotingModalProps) {
   const router = useRouter()
   const { data: session } = useSession()
+  const { currency, formatPrice } = useCurrency()
   const [modalState, dispatch] = useReducer(modalReducer, initialModalState)
   const { step, selectedPackage, selectedCategory } = modalState
 
   const [packages, setPackages] = useState<VotingPackage[]>([])
   const [categories, setCategories] = useState<VotingCategory[]>([])
-  const [currency, setCurrency] = useState<CurrencyInfo>({ code: 'USD', symbol: '$', rate: 1 })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -162,42 +144,6 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
           setCategories(catData)
           if (catData.length > 0) dispatch({ type: 'SELECT_CATEGORY', payload: catData[0] })
         }
-
-        let detectedCurrency = 'USD'
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-        const timezoneToCurrency: Record<string, string> = {
-          'Africa/Kampala': 'UGX', 'Africa/Nairobi': 'KES', 'Africa/Lagos': 'NGN',
-          'Africa/Accra': 'GHS', 'Africa/Addis_Ababa': 'ETB', 'Africa/Asmara': 'ERN',
-          'Africa/Cairo': 'EGP', 'Africa/Johannesburg': 'ZAR',
-          'Europe/London': 'GBP', 'Europe/Paris': 'EUR', 'Europe/Berlin': 'EUR',
-          'Europe/Stockholm': 'SEK', 'Europe/Oslo': 'NOK', 'Europe/Zurich': 'CHF',
-          'Asia/Tokyo': 'JPY', 'Asia/Shanghai': 'CNY', 'Asia/Singapore': 'SGD',
-          'Asia/Seoul': 'KRW', 'Asia/Kolkata': 'INR', 'Asia/Dubai': 'AED',
-          'Australia/Sydney': 'AUD', 'Pacific/Auckland': 'NZD',
-          'America/New_York': 'USD', 'America/Toronto': 'CAD', 'America/Mexico_City': 'MXN',
-          'America/Sao_Paulo': 'BRL',
-        }
-        if (timezoneToCurrency[timezone]) {
-          detectedCurrency = timezoneToCurrency[timezone]
-        }
-
-        try {
-          // Reuse cached rates if still fresh (TTL: 10 minutes)
-          if (!exchangeRateCache || Date.now() - exchangeRateCache.fetchedAt >= EXCHANGE_RATE_TTL) {
-            const rateRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
-            if (rateRes.ok) {
-              const rateData = await rateRes.json()
-              exchangeRateCache = { rates: rateData.rates ?? {}, fetchedAt: Date.now() }
-            }
-          }
-          if (exchangeRateCache) {
-            const rate = exchangeRateCache.rates[detectedCurrency] || 1
-            const symbol = currencySymbols[detectedCurrency] || detectedCurrency
-            setCurrency({ code: detectedCurrency, symbol, rate })
-          }
-        } catch {
-          setCurrency({ code: 'USD', symbol: '$', rate: 1 })
-        }
       } catch {
         setError('Failed to load voting data')
       } finally {
@@ -206,14 +152,6 @@ export default function VotingModal({ contestant, onClose, onSuccess }: VotingMo
     }
     init()
   }, [])
-
-  const formatPrice = (usdPrice: number) => {
-    const localPrice = usdPrice * currency.rate
-    if (['JPY', 'KRW', 'VND', 'IDR', 'UGX', 'NGN', 'KES'].includes(currency.code)) {
-      return `${currency.symbol}${Math.round(localPrice).toLocaleString()}`
-    }
-    return `${currency.symbol}${localPrice.toFixed(2)}`
-  }
 
   const handleSubmitVote = async () => {
     if (!selectedPackage || !selectedCategory || !contestant) return

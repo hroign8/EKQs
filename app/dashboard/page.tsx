@@ -23,7 +23,10 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
+import { useEvent } from '@/lib/hooks'
+import { formatDateShort } from '@/lib/utils'
 import { useDashboardData } from './hooks/useDashboardData'
+import TicketCard from '@/components/TicketCard'
 
 type DashboardTab = 'overview' | 'votes' | 'tickets' | 'messages'
 
@@ -32,6 +35,7 @@ export default function DashboardPage() {
   const { data: session, isPending: sessionPending } = useSession()
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview')
   const { loading, error, stats, votes, tickets, messages, account, fetchDashboard } = useDashboardData()
+  const { data: eventData } = useEvent()
 
   useEffect(() => {
     if (!sessionPending && session?.user) {
@@ -317,43 +321,15 @@ export default function DashboardPage() {
                         </Link>
                       </div>
                     ) : (
-                      <div className="px-6 pb-4 space-y-2">
-                        {tickets.slice(0, 5).map((t) => (
-                          <div
+                      <div className="px-4 pb-4 space-y-3">
+                        {tickets.slice(0, 3).map((t) => (
+                          <TicketCard
                             key={t.id}
-                            className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white border border-gray-50 hover:border-gray-200 hover:shadow-sm transition-all duration-200"
-                          >
-                            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-100 to-purple-50 flex items-center justify-center flex-shrink-0 shadow-sm">
-                              <Ticket className="w-5 h-5 text-violet-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-burgundy-900 truncate">
-                                {t.ticketName}
-                              </p>
-                              <p className="text-xs text-gray-400 mt-0.5">
-                                Qty: {t.quantity} · <span className="font-medium text-gray-500">${t.totalAmount.toFixed(2)}</span>
-                              </p>
-                            </div>
-                            <div className="text-right flex-shrink-0">
-                              <span
-                                className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${
-                                  t.status === 'completed'
-                                    ? 'text-green-700 bg-green-50'
-                                    : t.status === 'pending'
-                                    ? 'text-amber-700 bg-amber-50'
-                                    : 'text-red-700 bg-red-50'
-                                }`}
-                              >
-                                {t.status === 'completed' ? (
-                                  <><CheckCircle2 className="w-3 h-3" /> Confirmed</>
-                                ) : t.status === 'pending' ? (
-                                  <><Clock className="w-3 h-3" /> Pending</>
-                                ) : (
-                                  t.status
-                                )}
-                              </span>
-                            </div>
-                          </div>
+                            ticket={t}
+                            holderName={account?.name || 'Guest'}
+                            eventName={eventData?.name}
+                            eventDate={eventData ? formatDateShort(eventData.startDate) : undefined}
+                          />
                         ))}
                       </div>
                     )}
@@ -503,7 +479,7 @@ export default function DashboardPage() {
                       <Ticket className="w-5 h-5 text-violet-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-burgundy-900">Ticket Purchases</h3>
+                      <h3 className="text-lg font-bold text-burgundy-900">My Tickets</h3>
                       <p className="text-sm text-gray-500">
                         {tickets.length} purchase{tickets.length !== 1 ? 's' : ''} · <span className="font-semibold text-violet-600">{stats.confirmedTickets}</span> confirmed
                       </p>
@@ -525,42 +501,15 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="p-4 space-y-2">
+                  <div className="p-4 space-y-4">
                     {tickets.map((t) => (
-                      <div key={t.id} className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-gray-50/80 to-white border border-gray-50 hover:border-gray-200 hover:shadow-md hover:shadow-gray-100/50 transition-all duration-200 group">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-purple-50 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
-                          <Ticket className="w-6 h-6 text-violet-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-burgundy-900 group-hover:text-burgundy-800">{t.ticketName}</p>
-                          <p className="text-sm text-gray-400 mt-0.5">Qty: <span className="font-medium text-gray-500">{t.quantity}</span></p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-extrabold text-burgundy-900">${t.totalAmount.toFixed(2)}</p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                              t.status === 'completed'
-                                ? 'bg-green-50 text-green-700 border-green-100'
-                                : t.status === 'pending'
-                                ? 'bg-amber-50 text-amber-700 border-amber-100'
-                                : 'bg-red-50 text-red-700 border-red-100'
-                            }`}
-                          >
-                            {t.status === 'completed' ? (
-                              <><CheckCircle2 className="w-3 h-3" /> Confirmed</>
-                            ) : t.status === 'pending' ? (
-                              <><Clock className="w-3 h-3" /> Pending</>
-                            ) : (
-                              t.status
-                            )}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-400 flex-shrink-0 hidden sm:block font-medium">
-                          {new Date(t.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
+                      <TicketCard
+                        key={t.id}
+                        ticket={t}
+                        holderName={account?.name || 'Guest'}
+                        eventName={eventData?.name}
+                        eventDate={eventData ? formatDateShort(eventData.startDate) : undefined}
+                      />
                     ))}
                   </div>
                 )}
