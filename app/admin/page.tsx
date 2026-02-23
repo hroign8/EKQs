@@ -17,6 +17,7 @@ import VoteLogTab from './components/VoteLogTab'
 import RevenueTab from './components/RevenueTab'
 import PackagesTab from './components/PackagesTab'
 import SettingsTab from './components/SettingsTab'
+import UsersTab from './components/UsersTab'
 import AdminModals from './components/AdminModals'
 import { useAdminData } from './hooks/useAdminData'
 
@@ -26,6 +27,7 @@ const tabs: { id: AdminTab; label: string }[] = [
   { id: 'results', label: 'Results' },
   { id: 'packages', label: 'Packages' },
   { id: 'revenue', label: 'Revenue' },
+  { id: 'users', label: 'Users' },
   { id: 'votelog', label: 'Vote Log' },
   { id: 'settings', label: 'Event Settings' },
 ]
@@ -338,6 +340,14 @@ export default function AdminPage() {
             onEditPackage={admin.handleEditPackage}
             onDeletePackage={admin.handleDeletePackage}
             onTogglePackage={admin.handleTogglePackage}
+          />
+        )}
+
+        {activeTab === 'users' && (
+          <UsersTab
+            usersList={admin.usersList}
+            onBanUser={admin.handleBanUser}
+            onExportUsers={admin.handleExportUsers}
           />
         )}
 

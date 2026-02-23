@@ -28,7 +28,7 @@ export type VoteLogEntry = {
   amountPaid: number
 }
 
-export type AdminTab = 'overview' | 'contestants' | 'results' | 'votelog' | 'settings' | 'packages' | 'revenue'
+export type AdminTab = 'overview' | 'contestants' | 'results' | 'votelog' | 'settings' | 'packages' | 'revenue' | 'users'
 
 export type ModalType = 'contestant' | 'category' | 'vote' | 'event' | 'package' | 'advanced'
 

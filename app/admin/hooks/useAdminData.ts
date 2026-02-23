@@ -14,6 +14,7 @@ import type {
   ContestantFormData,
   EventFormData,
 } from '../types'
+import type { AdminUser } from '../components/UsersTab'
 import { getVotes, getTotalVotes } from '../types'
 
 interface OverviewData {
@@ -37,6 +38,7 @@ export function useAdminData() {
   const [categoriesList, setCategoriesList] = useState<Category[]>([])
   const [packagesList, setPackagesList] = useState<VotingPackage[]>([])
   const [voteLogList, setVoteLogList] = useState<VoteLogEntry[]>([])
+  const [usersList, setUsersList] = useState<AdminUser[]>([])
   const [overviewData, setOverviewData] = useState<OverviewData>({
     totalContestants: 0,
     totalVotes: 0,
@@ -101,13 +103,14 @@ export function useAdminData() {
   const fetchAdminData = useCallback(async () => {
     setDataLoading(true)
     try {
-      const [contestantsRes, categoriesRes, packagesRes, votesRes, overviewRes, eventRes] = await Promise.all([
+      const [contestantsRes, categoriesRes, packagesRes, votesRes, overviewRes, eventRes, usersRes] = await Promise.all([
         fetch('/api/admin/contestants'),
         fetch('/api/admin/categories'),
         fetch('/api/admin/packages'),
         fetch('/api/admin/votes'),
         fetch('/api/admin/overview'),
         fetch('/api/admin/event'),
+        fetch('/api/admin/users'),
       ])
 
       if (contestantsRes.ok) {
@@ -142,6 +145,9 @@ export function useAdminData() {
       }
       if (overviewRes.ok) {
         setOverviewData(await overviewRes.json())
+      }
+      if (usersRes.ok) {
+        setUsersList(await usersRes.json())
       }
       if (eventRes.ok) {
         const data = await eventRes.json()
@@ -622,6 +628,48 @@ export function useAdminData() {
   }, [requireDeleteConfirm, fetchAdminData, toast])
 
   // ── Voting active handler ────────────────────────────────
+
+  // ── User handlers ────────────────────────────────────────
+  const handleBanUser = useCallback(async (id: string, banned: boolean) => {
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, banned }),
+      })
+      if (res.ok) {
+        setUsersList(prev => prev.map(u => u.id === id ? { ...u, banned } : u))
+        toast.success(banned ? 'User has been banned' : 'User has been unbanned')
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Failed to update user')
+      }
+    } catch { toast.error('Failed to update user') }
+  }, [toast])
+
+  const handleExportUsers = useCallback(() => {
+    const headers = ['ID', 'Name', 'Email', 'Verified', 'Role', 'Banned', 'Votes', 'Tickets', 'Joined']
+    const rows = usersList.map(u => [
+      u.id, u.name, u.email,
+      u.emailVerified ? 'Yes' : 'No',
+      u.role,
+      u.banned ? 'Yes' : 'No',
+      u._count.votes,
+      u._count.tickets,
+      new Date(u.createdAt).toLocaleDateString(),
+    ].map(v => {
+      const str = String(v)
+      return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str
+    }))
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `users-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [usersList])
   /**
    * Toggle voting on/off and persist the change to the database via
    * PUT /api/admin/event. Unlike a raw setState, this actually takes effect.
@@ -756,6 +804,10 @@ export function useAdminData() {
     handleExportCSV,
     handleExportVoteLog,
     handleResetVotes,
+    // Users
+    usersList,
+    handleBanUser,
+    handleExportUsers,
     // Revenue
     totalRevenue,
     totalVotesSold,
