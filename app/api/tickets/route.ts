@@ -35,8 +35,10 @@ export async function POST(request: Request) {
     const merchantReference = `TKT-${randomUUID().slice(0, 8).toUpperCase()}`
 
     const publicBase =
-      process.env.BETTER_AUTH_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : null) ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
       'http://localhost:3001'
 

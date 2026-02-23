@@ -62,8 +62,10 @@ export async function POST(request: Request) {
 
     // Resolve the public base URL (identical logic to lib/auth.ts)
     const publicBase =
-      process.env.BETTER_AUTH_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : null) ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
       'http://localhost:3001'
 
@@ -76,7 +78,11 @@ export async function POST(request: Request) {
     try {
       ipnId = await registerIPN(ipnUrl)
     } catch (pesapalErr) {
-      console.error('PesaPal IPN registration failed:', pesapalErr)
+      const errMsg = pesapalErr instanceof Error ? pesapalErr.message : String(pesapalErr)
+      console.error('PesaPal IPN registration failed:', errMsg)
+      console.error('  publicBase:', publicBase, '| ipnUrl:', ipnUrl)
+      console.error('  PESAPAL_API_URL:', process.env.PESAPAL_API_URL || '(not set — using sandbox fallback)')
+      console.error('  PESAPAL_CONSUMER_KEY set:', !!process.env.PESAPAL_CONSUMER_KEY)
       // If PesaPal is not configured, create a free vote for $0 packages or return error
       if (pkg.price === 0) {
         const vote = await prisma.vote.create({
@@ -92,7 +98,11 @@ export async function POST(request: Request) {
         })
         return NextResponse.json({ success: true, voteId: vote.id, free: true })
       }
-      return errorResponse('Payment provider is not configured', 503)
+      return errorResponse(
+        `Payment provider error: ${errMsg.includes('auth') ? 'authentication failed' : 'connection failed'}. ` +
+        `Please contact support if this persists.`,
+        503
+      )
     }
 
     // Submit order to PesaPal

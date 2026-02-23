@@ -61,7 +61,17 @@ interface PesapalIPNRegistration {
   status: string
 }
 
-const PESAPAL_API_URL = process.env.PESAPAL_API_URL || 'https://cybqa.pesapal.com/pesapalv3'
+function getPesapalApiUrl(): string {
+  const url = process.env.PESAPAL_API_URL
+  if (!url) {
+    console.warn(
+      '[PesaPal] PESAPAL_API_URL is not set. Falling back to sandbox. ' +
+      'Set PESAPAL_API_URL in your environment (production: https://pay.pesapal.com/v3)'
+    )
+    return 'https://cybqa.pesapal.com/pesapalv3'
+  }
+  return url
+}
 
 let cachedToken: { token: string; expiresAt: Date } | null = null
 let cachedIpnId: { id: string; url: string } | null = null
@@ -82,7 +92,10 @@ export async function getPesapalToken(): Promise<string> {
     throw new Error('PesaPal credentials are not configured')
   }
 
-  const response = await fetch(`${PESAPAL_API_URL}/api/Auth/RequestToken`, {
+  const apiUrl = getPesapalApiUrl()
+  console.log(`[PesaPal] Authenticating via ${apiUrl} (key prefix: ${consumerKey.slice(0, 6)}...)`)
+
+  const response = await fetch(`${apiUrl}/api/Auth/RequestToken`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
@@ -92,13 +105,14 @@ export async function getPesapalToken(): Promise<string> {
   })
 
   if (!response.ok) {
-    throw new Error(`PesaPal auth failed: ${response.status}`)
+    const body = await response.text().catch(() => '(no body)')
+    throw new Error(`PesaPal auth failed: HTTP ${response.status} from ${apiUrl} — ${body}`)
   }
 
   const data: PesapalAuthResponse = await response.json()
 
   if (data.error) {
-    throw new Error(`PesaPal auth error: ${JSON.stringify(data.error)}`)
+    throw new Error(`PesaPal auth error: ${JSON.stringify(data.error)} (url: ${apiUrl})`)
   }
 
   // Cache token with 5-minute buffer before expiry
@@ -118,8 +132,10 @@ export async function registerIPN(ipnUrl: string): Promise<string> {
     return cachedIpnId.id
   }
   const token = await getPesapalToken()
+  const apiUrl = getPesapalApiUrl()
+  console.log(`[PesaPal] Registering IPN: ${ipnUrl}`)
 
-  const response = await fetch(`${PESAPAL_API_URL}/api/URLSetup/RegisterIPN`, {
+  const response = await fetch(`${apiUrl}/api/URLSetup/RegisterIPN`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -133,13 +149,14 @@ export async function registerIPN(ipnUrl: string): Promise<string> {
   })
 
   if (!response.ok) {
-    throw new Error(`PesaPal IPN registration failed: ${response.status}`)
+    const body = await response.text().catch(() => '(no body)')
+    throw new Error(`PesaPal IPN registration failed: HTTP ${response.status} — ${body}`)
   }
 
   const data: PesapalIPNRegistration = await response.json()
 
   if (data.error) {
-    throw new Error(`PesaPal IPN error: ${data.error}`)
+    throw new Error(`PesaPal IPN error: ${JSON.stringify(data.error)}`)
   }
 
   cachedIpnId = { id: data.ipn_id, url: ipnUrl }
@@ -176,7 +193,8 @@ export async function submitOrder(params: {
     },
   }
 
-  const response = await fetch(`${PESAPAL_API_URL}/api/Transactions/SubmitOrderRequest`, {
+  const apiUrl = getPesapalApiUrl()
+  const response = await fetch(`${apiUrl}/api/Transactions/SubmitOrderRequest`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -187,7 +205,8 @@ export async function submitOrder(params: {
   })
 
   if (!response.ok) {
-    throw new Error(`PesaPal order submission failed: ${response.status}`)
+    const body = await response.text().catch(() => '(no body)')
+    throw new Error(`PesaPal order submission failed: HTTP ${response.status} — ${body}`)
   }
 
   const data: PesapalOrderResponse = await response.json()
@@ -205,8 +224,9 @@ export async function submitOrder(params: {
 export async function getTransactionStatus(orderTrackingId: string): Promise<PesapalTransactionStatus> {
   const token = await getPesapalToken()
 
+  const apiUrl = getPesapalApiUrl()
   const response = await fetch(
-    `${PESAPAL_API_URL}/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
+    `${apiUrl}/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
     {
       method: 'GET',
       headers: {
@@ -217,7 +237,8 @@ export async function getTransactionStatus(orderTrackingId: string): Promise<Pes
   )
 
   if (!response.ok) {
-    throw new Error(`PesaPal transaction status failed: ${response.status}`)
+    const body = await response.text().catch(() => '(no body)')
+    throw new Error(`PesaPal transaction status failed: HTTP ${response.status} — ${body}`)
   }
 
   const data: PesapalTransactionStatus = await response.json()

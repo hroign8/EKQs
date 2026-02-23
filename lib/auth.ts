@@ -7,11 +7,15 @@ import { sendVerificationEmail, sendPasswordResetEmail } from '@/lib/email'
 // Resolve the canonical base URL:
 // 1. BETTER_AUTH_URL (explicitly set, highest priority)
 // 2. NEXT_PUBLIC_APP_URL (set in Vercel env vars)
-// 3. VERCEL_URL (auto-injected by Vercel, no protocol prefix)
-// 4. localhost fallback for local dev
+// 3. VERCEL_PROJECT_PRODUCTION_URL (stable production domain, auto-injected by Vercel)
+// 4. VERCEL_URL (deployment-specific URL, auto-injected by Vercel)
+// 5. localhost fallback for local dev
 const resolvedBaseURL =
   process.env.BETTER_AUTH_URL ||
   process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : null) ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
   'http://localhost:3001'
 
@@ -75,6 +79,9 @@ export const auth = betterAuth({
     resolvedBaseURL,
     'http://localhost:3001',
     'https://ek-qs.vercel.app',
+    ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
+      : []),
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
   ],
 })

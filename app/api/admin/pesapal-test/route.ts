@@ -16,10 +16,12 @@ export async function GET() {
   const hasSecret = !!process.env.PESAPAL_CONSUMER_SECRET
   const ipnUrl = process.env.PESAPAL_IPN_URL || '(not set)'
   const publicBase =
-    process.env.BETTER_AUTH_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : null) ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-    'localhost'
+    'http://localhost:3001'
 
   const results: Record<string, unknown> = {
     config: {
