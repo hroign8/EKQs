@@ -129,15 +129,15 @@ export function useAdminData() {
       }
       if (votesRes.ok) {
         const data = await votesRes.json()
-        const entries = (data.votes || []).map((v: { id: string; createdAt: string; user?: { email: string }; contestant?: { name: string }; category?: { name: string }; verified: boolean; package?: { id: string; name: string }; votesCount: number; amountPaid: number }) => ({
+        const entries = (data.votes || []).map((v: { id: string; time: string; voterEmail: string; voterName?: string; contestant: string; category: string; verified: boolean; packageName: string; votesCount: number; amountPaid: number }) => ({
           id: v.id,
-          time: new Date(v.createdAt).toLocaleString(),
-          voterEmail: v.user?.email || 'unknown',
-          contestant: v.contestant?.name || 'unknown',
-          category: v.category?.name || 'unknown',
+          time: new Date(v.time).toLocaleString(),
+          voterEmail: v.voterEmail || 'unknown',
+          voterName: v.voterName || '',
+          contestant: v.contestant || 'unknown',
+          category: v.category || 'unknown',
           verified: v.verified,
-          packageId: v.package?.id || '',
-          packageName: v.package?.name || '',
+          packageName: v.packageName || '',
           votesCount: v.votesCount,
           amountPaid: v.amountPaid,
         }))
@@ -612,6 +612,25 @@ export function useAdminData() {
     URL.revokeObjectURL(url)
   }, [voteLogList, escapeCSV])
 
+  const handleVerifyPending = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/votes', { method: 'PATCH' })
+      const data = await res.json()
+      if (res.ok) {
+        if (data.verified > 0 || data.removed > 0) {
+          toast.success(data.message)
+          await fetchAdminData()
+        } else {
+          toast.info(data.message || 'No new payments to verify')
+        }
+      } else {
+        toast.error(data.error || 'Failed to verify pending votes')
+      }
+    } catch {
+      toast.error('Failed to verify pending votes')
+    }
+  }, [fetchAdminData, toast])
+
   const handleResetVotes = useCallback(() => {
     requireDeleteConfirm('reset-all-votes', async () => {
       try {
@@ -803,6 +822,7 @@ export function useAdminData() {
     handleSavePackage,
     handleExportCSV,
     handleExportVoteLog,
+    handleVerifyPending,
     handleResetVotes,
     // Users
     usersList,

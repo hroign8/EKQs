@@ -19,10 +19,10 @@ export type VoteLogEntry = {
   id: string
   time: string
   voterEmail: string
+  voterName: string
   contestant: string
   category: string
   verified: boolean
-  packageId: string
   packageName: string
   votesCount: number
   amountPaid: number

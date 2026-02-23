@@ -28,12 +28,13 @@ export default function RevenueTab({
   const getPackageSalesBreakdown = () => {
     const breakdown: Record<string, { count: number; revenue: number; votes: number }> = {}
     voteLogList.forEach(entry => {
-      if (!breakdown[entry.packageId]) {
-        breakdown[entry.packageId] = { count: 0, revenue: 0, votes: 0 }
+      const key = entry.packageName || 'Unknown'
+      if (!breakdown[key]) {
+        breakdown[key] = { count: 0, revenue: 0, votes: 0 }
       }
-      breakdown[entry.packageId].count += 1
-      breakdown[entry.packageId].revenue += entry.amountPaid
-      breakdown[entry.packageId].votes += entry.votesCount
+      breakdown[key].count += 1
+      breakdown[key].revenue += entry.amountPaid
+      breakdown[key].votes += entry.votesCount
     })
     return breakdown
   }
@@ -100,7 +101,7 @@ export default function RevenueTab({
             </thead>
             <tbody className="divide-y divide-gray-100">
               {packagesList.map((pkg) => {
-                const salesData = getPackageSalesBreakdown()[pkg.id] || { count: 0, revenue: 0, votes: 0 }
+                const salesData = getPackageSalesBreakdown()[pkg.name] || { count: 0, revenue: 0, votes: 0 }
                 return (
                   <tr key={pkg.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">

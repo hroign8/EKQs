@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/api-utils'
 import { manualVoteSchema } from '@/lib/validations'
+import { getTransactionStatus } from '@/lib/pesapal'
 
 /**
  * GET /api/admin/votes
@@ -114,6 +115,108 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, voteId: vote.id }, { status: 201 })
   } catch (err) {
     console.error('Admin manual vote error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+/**
+ * PATCH /api/admin/votes
+ * Admin endpoint — re-checks PesaPal for all pending vote transactions
+ * and verifies any that have been completed.
+ */
+export async function PATCH() {
+  const { error } = await requireAdmin()
+  if (error) return error
+
+  try {
+    // Find all unverified votes that have a PesaPal transaction ID
+    const pendingVotes = await prisma.vote.findMany({
+      where: { verified: false, transactionId: { not: null } },
+      select: { id: true, transactionId: true },
+    })
+
+    // Also clean up orphaned votes (no transactionId) older than 1 hour
+    // These are votes where the user never completed the payment redirect
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+    const orphanedResult = await prisma.vote.deleteMany({
+      where: {
+        verified: false,
+        transactionId: null,
+        createdAt: { lt: oneHourAgo },
+      },
+    })
+
+    if (pendingVotes.length === 0) {
+      const msg = orphanedResult.count > 0
+        ? `Removed ${orphanedResult.count} abandoned vote(s) with no payment`
+        : 'No pending votes to check'
+      return NextResponse.json({
+        verified: 0, checked: 0, removed: orphanedResult.count, message: msg,
+      })
+    }
+
+    // Deduplicate by transactionId (multiple votes can share one transaction)
+    const uniqueTransactionIds = [...new Set(
+      pendingVotes.map(v => v.transactionId).filter((t): t is string => !!t)
+    )]
+
+    let verifiedCount = 0
+    let removedCount = 0
+    const errors: string[] = []
+
+    for (const orderTrackingId of uniqueTransactionIds) {
+      try {
+        const status = await getTransactionStatus(orderTrackingId)
+
+        // Update the PesaPal transaction record
+        await prisma.pesapalTransaction.updateMany({
+          where: { orderTrackingId },
+          data: {
+            status: status.payment_status_description,
+            statusCode: String(status.status_code),
+            paymentMethod: status.payment_method || undefined,
+            pesapalTransactionId: status.confirmation_code || undefined,
+          },
+        })
+
+        // status_code 1 = completed
+        if (status.status_code === 1) {
+          const result = await prisma.vote.updateMany({
+            where: { transactionId: orderTrackingId, verified: false },
+            data: { verified: true },
+          })
+          verifiedCount += result.count
+        }
+        // status_code 2 = failed, 3 = reversed, 4 = cancelled/invalid
+        // Remove vote records for failed/cancelled payments — they never counted
+        else if (status.status_code >= 2) {
+          const result = await prisma.vote.deleteMany({
+            where: { transactionId: orderTrackingId, verified: false },
+          })
+          removedCount += result.count
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        console.error(`Failed to check transaction ${orderTrackingId}:`, msg)
+        errors.push(`${orderTrackingId}: ${msg}`)
+      }
+    }
+
+    const totalRemoved = removedCount + orphanedResult.count
+    const parts: string[] = []
+    if (verifiedCount > 0) parts.push(`Verified ${verifiedCount} vote(s)`)
+    if (totalRemoved > 0) parts.push(`Removed ${totalRemoved} failed/cancelled vote(s)`)
+    if (parts.length === 0) parts.push(`Checked ${uniqueTransactionIds.length} transaction(s), no changes`)
+
+    return NextResponse.json({
+      checked: uniqueTransactionIds.length,
+      verified: verifiedCount,
+      removed: totalRemoved,
+      errors: errors.length > 0 ? errors : undefined,
+      message: parts.join('. '),
+    })
+  } catch (err) {
+    console.error('Admin verify pending error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -55,3 +55,78 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+/**
+ * PUT /api/admin/packages
+ * Admin endpoint — updates a voting package (name, votes, price, isActive toggle).
+ */
+export async function PUT(request: Request) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
+  try {
+    const body = await request.json()
+    const { id, ...updates } = body
+
+    if (!id || typeof id !== 'string') {
+      return errorResponse('Package ID is required')
+    }
+
+    const existing = await prisma.votingPackage.findUnique({ where: { id } })
+    if (!existing) {
+      return errorResponse('Package not found', 404)
+    }
+
+    // Build the data to update — only include fields that were sent
+    const data: Record<string, unknown> = {}
+    if (typeof updates.name === 'string') data.name = updates.name
+    if (typeof updates.votes === 'number') data.votes = updates.votes
+    if (typeof updates.price === 'number') data.price = updates.price
+    if (typeof updates.isActive === 'boolean') data.isActive = updates.isActive
+    if (typeof updates.slug === 'string') data.slug = updates.slug
+
+    if (Object.keys(data).length === 0) {
+      return errorResponse('No valid fields to update')
+    }
+
+    const updated = await prisma.votingPackage.update({
+      where: { id },
+      data,
+    })
+
+    return NextResponse.json(updated)
+  } catch (err) {
+    console.error('Admin package update error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+/**
+ * DELETE /api/admin/packages?id=...
+ * Admin endpoint — deletes a voting package.
+ */
+export async function DELETE(request: Request) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return errorResponse('Package ID is required')
+    }
+
+    const existing = await prisma.votingPackage.findUnique({ where: { id } })
+    if (!existing) {
+      return errorResponse('Package not found', 404)
+    }
+
+    await prisma.votingPackage.delete({ where: { id } })
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('Admin package delete error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

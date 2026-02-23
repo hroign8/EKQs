@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Users, Crown, CheckCircle, XCircle, ShieldBan, Shield, Search, Download } from 'lucide-react'
+import { Users, Crown, BadgeCheck, XCircle, ShieldBan, Shield, Search, Download } from 'lucide-react'
 
 export type AdminUser = {
   id: string
@@ -168,7 +168,7 @@ export default function UsersTab({ usersList, onBanUser, onExportUsers }: UsersT
                       </span>
                     ) : user.emailVerified ? (
                       <span className="flex items-center gap-1 text-xs font-semibold text-green-600">
-                        <CheckCircle className="w-3.5 h-3.5" /> Verified
+                        <BadgeCheck className="w-3.5 h-3.5" /> Verified
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-xs font-semibold text-amber-600">

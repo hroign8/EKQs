@@ -322,6 +322,7 @@ export default function AdminPage() {
             voteLogList={admin.voteLogList}
             onAddManualVote={admin.handleAddManualVote}
             onExportVoteLog={admin.handleExportVoteLog}
+            onVerifyPending={admin.handleVerifyPending}
           />
         )}
 
