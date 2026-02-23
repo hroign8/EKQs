@@ -50,6 +50,7 @@ export async function GET() {
       votingStart: event.votingStart,
       votingEnd: event.votingEnd,
       isActive: event.isActive,
+      votingOpen: event.votingOpen,
       totalVotes: totalVotesResult._sum.votesCount || 0,
       uniqueVoters: uniqueVoterCount,
       votePrice: event.votePrice,

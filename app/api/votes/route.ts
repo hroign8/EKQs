@@ -5,7 +5,6 @@ import { submitVoteSchema } from '@/lib/validations'
 import { submitOrder, registerIPN } from '@/lib/pesapal'
 import { randomUUID } from 'crypto'
 import { createRateLimiter } from '@/lib/rate-limit'
-import { parseLocalDate } from '@/lib/utils'
 
 const limiter = createRateLimiter('votes', 20, 60_000) // 20 per minute
 
@@ -51,32 +50,33 @@ export async function POST(request: Request) {
       return errorResponse('Package not found')
     }
 
-    // findFirst with `isActive: true` already guarantees the event is active;
-    // this single check covers both "no event" and "voting closed" cases.
-    const event = await prisma.event.findFirst({ where: { isActive: true } })
-    if (!event) {
+    // Find the most recent event — isActive is not a reliable gate because
+    // the old toggle logic could have set it to false. votingOpen is the sole gate.
+    const event = await prisma.event.findFirst({ orderBy: { createdAt: 'desc' } })
+    // votingOpen defaults to true for documents created before the field was added
+    if (!event || event.votingOpen === false) {
       return errorResponse('Voting is currently closed')
     }
 
-    // Enforce voting period (dates are DD/MM/YYYY format)
-    const now = new Date()
-    const votingStart = parseLocalDate(event.votingStart)
-    const votingEnd = parseLocalDate(event.votingEnd)
-    votingEnd.setHours(23, 59, 59, 999) // Include the entire end day
-    if (now < votingStart || now > votingEnd) {
-      return errorResponse('Voting is not currently open')
-    }
-
     const merchantReference = `VOTE-${randomUUID().slice(0, 8).toUpperCase()}`
-    const callbackUrl = `${process.env.BETTER_AUTH_URL || 'http://localhost:3001'}/api/pesapal/callback`
 
-    // Register IPN if needed
-    const ipnUrl = process.env.PESAPAL_IPN_URL || `${process.env.BETTER_AUTH_URL}/api/pesapal/ipn`
+    // Resolve the public base URL (identical logic to lib/auth.ts)
+    const publicBase =
+      process.env.BETTER_AUTH_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      'http://localhost:3001'
+
+    const callbackUrl = `${publicBase}/api/pesapal/callback`
+    const ipnUrl = process.env.PESAPAL_IPN_URL?.startsWith('http://localhost')
+      ? `${publicBase}/api/pesapal/ipn`
+      : process.env.PESAPAL_IPN_URL || `${publicBase}/api/pesapal/ipn`
     let ipnId: string
 
     try {
       ipnId = await registerIPN(ipnUrl)
-    } catch {
+    } catch (pesapalErr) {
+      console.error('PesaPal IPN registration failed:', pesapalErr)
       // If PesaPal is not configured, create a free vote for $0 packages or return error
       if (pkg.price === 0) {
         const vote = await prisma.vote.create({

@@ -61,17 +61,17 @@ export default function AdminLoginPage() {
 
   if (sessionPending) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-burgundy-900" />
-      </div>
+      </main>
     )
   }
 
   if (session?.user && isAdmin(session.user)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-burgundy-900" />
-      </div>
+      </main>
     )
   }
 

@@ -75,17 +75,26 @@ export async function PUT(request: Request) {
       return errorResponse(parsed.error.issues[0].message)
     }
 
+    // Find the most recent event regardless of isActive so the route works even
+    // if a previous toggle accidentally set isActive to false.
     const activeEvent = await prisma.event.findFirst({
-      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
     })
 
     if (!activeEvent) {
       return errorResponse('No active event found', 404)
     }
 
+    // When re-opening voting, also restore isActive so the event is visible
+    // to any other queries that still rely on that field.
+    const updateData = { ...parsed.data }
+    if (parsed.data.votingOpen === true) {
+      Object.assign(updateData, { isActive: true })
+    }
+
     const event = await prisma.event.update({
       where: { id: activeEvent.id },
-      data: parsed.data,
+      data: updateData,
     })
 
     return NextResponse.json(event)

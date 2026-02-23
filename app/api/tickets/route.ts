@@ -33,14 +33,24 @@ export async function POST(request: Request) {
 
     const totalAmount = ticketType.price * quantity
     const merchantReference = `TKT-${randomUUID().slice(0, 8).toUpperCase()}`
-    const callbackUrl = `${process.env.BETTER_AUTH_URL || 'http://localhost:3001'}/api/pesapal/callback`
 
-    const ipnUrl = process.env.PESAPAL_IPN_URL || `${process.env.BETTER_AUTH_URL}/api/pesapal/ipn`
+    const publicBase =
+      process.env.BETTER_AUTH_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      'http://localhost:3001'
+
+    const callbackUrl = `${publicBase}/api/pesapal/callback`
+    const ipnUrl = process.env.PESAPAL_IPN_URL?.startsWith('http://localhost')
+      ? `${publicBase}/api/pesapal/ipn`
+      : process.env.PESAPAL_IPN_URL || `${publicBase}/api/pesapal/ipn`
+
     let ipnId: string
 
     try {
       ipnId = await registerIPN(ipnUrl)
-    } catch {
+    } catch (pesapalErr) {
+      console.error('PesaPal IPN registration failed:', pesapalErr)
       return errorResponse('Payment provider is not configured', 503)
     }
 

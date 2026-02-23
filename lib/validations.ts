@@ -45,6 +45,7 @@ export const eventSchema = z.object({
   votingStart: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'Date must be DD/MM/YYYY'),
   votingEnd: z.string().regex(/^\d{2}\/\d{2}\/\d{4}$/, 'Date must be DD/MM/YYYY'),
   isActive: z.boolean().optional(),
+  votingOpen: z.boolean().optional(),
   publicResults: z.boolean().optional(),
   votePrice: z.number().positive().optional(),
 })

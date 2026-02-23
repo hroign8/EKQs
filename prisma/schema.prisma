@@ -160,6 +160,7 @@ model Event {
   votingStart      String
   votingEnd        String
   isActive         Boolean  @default(true)
+  votingOpen       Boolean  @default(true)
   publicResults    Boolean  @default(false)
   votePrice        Float    @default(0.30)
   createdAt        DateTime @default(now())

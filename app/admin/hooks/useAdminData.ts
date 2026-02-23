@@ -154,7 +154,7 @@ export function useAdminData() {
             votingStart: data.votingStart || '',
             votingEnd: data.votingEnd || '',
           })
-          setVotingActive(data.isActive ?? true)
+          setVotingActive(data.votingOpen ?? true)
           setPublicResults(data.publicResults ?? false)
         }
       }
@@ -632,7 +632,7 @@ export function useAdminData() {
       const res = await fetch('/api/admin/event', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: active }),
+        body: JSON.stringify({ votingOpen: active }),
       })
       if (res.ok) {
         toast.success(active ? 'Voting is now open' : 'Voting has been closed')
