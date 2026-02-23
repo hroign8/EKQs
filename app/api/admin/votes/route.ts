@@ -156,9 +156,9 @@ export async function PATCH() {
     }
 
     // Deduplicate by transactionId (multiple votes can share one transaction)
-    const uniqueTransactionIds = [...new Set(
+    const uniqueTransactionIds = Array.from(new Set(
       pendingVotes.map(v => v.transactionId).filter((t): t is string => !!t)
-    )]
+    ))
 
     let verifiedCount = 0
     let removedCount = 0
