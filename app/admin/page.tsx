@@ -16,6 +16,7 @@ import ContestantsTab from './components/ContestantsTab'
 import VoteLogTab from './components/VoteLogTab'
 import RevenueTab from './components/RevenueTab'
 import PackagesTab from './components/PackagesTab'
+import TicketsTab from './components/TicketsTab'
 import SettingsTab from './components/SettingsTab'
 import UsersTab from './components/UsersTab'
 import AdminModals from './components/AdminModals'
@@ -26,6 +27,7 @@ const tabs: { id: AdminTab; label: string }[] = [
   { id: 'contestants', label: 'Participants' },
   { id: 'results', label: 'Results' },
   { id: 'packages', label: 'Packages' },
+  { id: 'tickets', label: 'Tickets' },
   { id: 'revenue', label: 'Revenue' },
   { id: 'users', label: 'Users' },
   { id: 'votelog', label: 'Vote Log' },
@@ -344,6 +346,16 @@ export default function AdminPage() {
           />
         )}
 
+        {activeTab === 'tickets' && (
+          <TicketsTab
+            ticketTypesList={admin.ticketTypesList}
+            onAddTicket={admin.handleAddTicket}
+            onEditTicket={admin.handleEditTicket}
+            onDeleteTicket={admin.handleDeleteTicket}
+            onToggleTicket={admin.handleToggleTicket}
+          />
+        )}
+
         {activeTab === 'users' && (
           <UsersTab
             usersList={admin.usersList}
@@ -411,6 +423,10 @@ export default function AdminPage() {
         onSavePackage={admin.handleSavePackage}
         advancedSettings={admin.advancedSettings}
         setAdvancedSettings={admin.setAdvancedSettings}
+        ticketFormData={admin.ticketFormData}
+        setTicketFormData={admin.setTicketFormData}
+        editingTicket={admin.editingTicket}
+        onSaveTicket={admin.handleSaveTicket}
       />
     </div>
   )

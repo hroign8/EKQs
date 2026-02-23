@@ -9,12 +9,15 @@ import type {
   AdvancedSettings,
   ContestantFormData,
   EventFormData,
+  AdminTicketType,
+  TicketFormData,
 } from '../types'
 import ContestantModal from './modals/ContestantModal'
 import CategoryModal from './modals/CategoryModal'
 import VoteModal from './modals/VoteModal'
 import EventModal from './modals/EventModal'
 import PackageModal from './modals/PackageModal'
+import TicketTypeModal from './modals/TicketTypeModal'
 import AdvancedSettingsModal from './modals/AdvancedSettingsModal'
 
 interface AdminModalsProps {
@@ -60,6 +63,11 @@ interface AdminModalsProps {
   // Advanced
   advancedSettings: AdvancedSettings
   setAdvancedSettings: (settings: AdvancedSettings) => void
+  // Ticket
+  ticketFormData: TicketFormData
+  setTicketFormData: (data: TicketFormData) => void
+  editingTicket: AdminTicketType | null
+  onSaveTicket: () => void
 }
 
 const MODAL_TITLE: Record<ModalType, string | ((props: AdminModalsProps) => string)> = {
@@ -68,6 +76,7 @@ const MODAL_TITLE: Record<ModalType, string | ((props: AdminModalsProps) => stri
   vote: 'Add Manual Vote',
   event: 'Edit Event Details',
   package: (p) => (p.editingPackage ? 'Edit Package' : 'Add New Package'),
+  ticket: (p) => (p.editingTicket ? 'Edit Ticket Type' : 'Add New Ticket Type'),
   advanced: 'Advanced Settings',
 }
 
@@ -88,6 +97,7 @@ export default function AdminModals(props: AdminModalsProps) {
     eventFormData, setEventFormData, onSaveEvent,
     packageFormData, setPackageFormData, editingPackage, onSavePackage,
     advancedSettings, setAdvancedSettings,
+    ticketFormData, setTicketFormData, editingTicket, onSaveTicket,
   } = props
 
   if (!showModal) return null
@@ -179,6 +189,16 @@ export default function AdminModals(props: AdminModalsProps) {
           <AdvancedSettingsModal
             advancedSettings={advancedSettings}
             setAdvancedSettings={setAdvancedSettings}
+            onClose={onClose}
+          />
+        )}
+
+        {modalType === 'ticket' && (
+          <TicketTypeModal
+            ticketFormData={ticketFormData}
+            setTicketFormData={setTicketFormData}
+            editingTicket={editingTicket}
+            onSave={onSaveTicket}
             onClose={onClose}
           />
         )}

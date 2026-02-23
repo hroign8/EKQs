@@ -28,9 +28,31 @@ export type VoteLogEntry = {
   amountPaid: number
 }
 
-export type AdminTab = 'overview' | 'contestants' | 'results' | 'votelog' | 'settings' | 'packages' | 'revenue' | 'users'
+export type AdminTab = 'overview' | 'contestants' | 'results' | 'votelog' | 'settings' | 'packages' | 'revenue' | 'users' | 'tickets'
 
-export type ModalType = 'contestant' | 'category' | 'vote' | 'event' | 'package' | 'advanced'
+export type ModalType = 'contestant' | 'category' | 'vote' | 'event' | 'package' | 'advanced' | 'ticket'
+
+export type AdminTicketType = {
+  id: string
+  name: string
+  price: number
+  features: string[]
+  icon: string
+  popular: boolean
+  isActive: boolean
+  sortOrder: number
+  purchaseCount: number
+  createdAt: string
+}
+
+export type TicketFormData = {
+  name: string
+  price: string
+  features: string
+  icon: string
+  popular: boolean
+  sortOrder: string
+}
 
 export type AdvancedSettings = {
   maintenanceMode: boolean

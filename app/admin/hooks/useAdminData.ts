@@ -13,6 +13,8 @@ import type {
   AdvancedSettings,
   ContestantFormData,
   EventFormData,
+  AdminTicketType,
+  TicketFormData,
 } from '../types'
 import type { AdminUser } from '../components/UsersTab'
 import { getVotes, getTotalVotes } from '../types'
@@ -57,6 +59,7 @@ export function useAdminData() {
   const [editingContestant, setEditingContestant] = useState<Contestant | null>(null)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [editingPackage, setEditingPackage] = useState<VotingPackage | null>(null)
+  const [editingTicket, setEditingTicket] = useState<AdminTicketType | null>(null)
 
   // ── Form state ──────────────────────────────────────────
   const [formData, setFormData] = useState<ContestantFormData>({
@@ -82,6 +85,15 @@ export function useAdminData() {
     votingEnd: '',
   })
   const [packageFormData, setPackageFormData] = useState({ name: '', votes: '', price: '' })
+  const [ticketTypesList, setTicketTypesList] = useState<AdminTicketType[]>([])
+  const [ticketFormData, setTicketFormData] = useState<TicketFormData>({
+    name: '',
+    price: '',
+    features: '',
+    icon: 'ticket',
+    popular: false,
+    sortOrder: '0',
+  })
   const [advancedSettings, setAdvancedSettings] = useState<AdvancedSettings>({
     maintenanceMode: false,
     emailNotifications: true,
@@ -103,7 +115,7 @@ export function useAdminData() {
   const fetchAdminData = useCallback(async () => {
     setDataLoading(true)
     try {
-      const [contestantsRes, categoriesRes, packagesRes, votesRes, overviewRes, eventRes, usersRes] = await Promise.all([
+      const [contestantsRes, categoriesRes, packagesRes, votesRes, overviewRes, eventRes, usersRes, ticketsRes] = await Promise.all([
         fetch('/api/admin/contestants'),
         fetch('/api/admin/categories'),
         fetch('/api/admin/packages'),
@@ -111,6 +123,7 @@ export function useAdminData() {
         fetch('/api/admin/overview'),
         fetch('/api/admin/event'),
         fetch('/api/admin/users'),
+        fetch('/api/admin/tickets'),
       ])
 
       if (contestantsRes.ok) {
@@ -148,6 +161,9 @@ export function useAdminData() {
       }
       if (usersRes.ok) {
         setUsersList(await usersRes.json())
+      }
+      if (ticketsRes.ok) {
+        setTicketTypesList(await ticketsRes.json())
       }
       if (eventRes.ok) {
         const data = await eventRes.json()
@@ -567,6 +583,122 @@ export function useAdminData() {
     } catch { toast.error('An error occurred while saving') }
   }, [packageFormData, editingPackage, handleCloseModal])
 
+  // ── Ticket type handlers ────────────────────────────────
+  const handleAddTicket = useCallback(() => {
+    setEditingTicket(null)
+    setTicketFormData({ name: '', price: '', features: '', icon: 'ticket', popular: false, sortOrder: '0' })
+    setModalType('ticket')
+    setShowModal(true)
+  }, [])
+
+  const handleEditTicket = useCallback((t: AdminTicketType) => {
+    setEditingTicket(t)
+    setTicketFormData({
+      name: t.name,
+      price: t.price.toString(),
+      features: t.features.join('\n'),
+      icon: t.icon,
+      popular: t.popular,
+      sortOrder: t.sortOrder.toString(),
+    })
+    setModalType('ticket')
+    setShowModal(true)
+  }, [])
+
+  const handleDeleteTicket = useCallback((id: string) => {
+    requireDeleteConfirm(`ticket-${id}`, async () => {
+      try {
+        const res = await fetch(`/api/admin/tickets?id=${id}`, { method: 'DELETE' })
+        if (res.ok) {
+          setTicketTypesList(prev => prev.filter(t => t.id !== id))
+        } else {
+          const data = await res.json()
+          toast.error(data.error || 'Failed to delete ticket type')
+        }
+      } catch { toast.error('Failed to delete ticket type') }
+    })
+  }, [requireDeleteConfirm, toast])
+
+  const handleToggleTicket = useCallback(async (id: string) => {
+    const ticket = ticketTypesList.find(t => t.id === id)
+    if (!ticket) return
+    try {
+      const res = await fetch('/api/admin/tickets', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isActive: !ticket.isActive }),
+      })
+      if (res.ok) {
+        setTicketTypesList(prev => prev.map(t => t.id === id ? { ...t, isActive: !t.isActive } : t))
+      }
+    } catch { toast.error('Failed to toggle ticket type') }
+  }, [ticketTypesList])
+
+  const handleSaveTicket = useCallback(async () => {
+    if (!ticketFormData.name || !ticketFormData.price) {
+      toast.error('Please fill in name and price')
+      return
+    }
+    const price = parseFloat(ticketFormData.price)
+    const sortOrder = parseInt(ticketFormData.sortOrder) || 0
+    if (isNaN(price) || price < 0) {
+      toast.error('Please enter a valid price')
+      return
+    }
+    const features = ticketFormData.features
+      .split('\n')
+      .map(f => f.trim())
+      .filter(Boolean)
+
+    try {
+      if (editingTicket) {
+        const res = await fetch('/api/admin/tickets', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editingTicket.id,
+            name: ticketFormData.name,
+            price,
+            features,
+            icon: ticketFormData.icon,
+            popular: ticketFormData.popular,
+            sortOrder,
+          }),
+        })
+        if (res.ok) {
+          const updated = await res.json()
+          setTicketTypesList(prev => prev.map(t => t.id === editingTicket.id ? { ...updated, purchaseCount: t.purchaseCount } : t))
+        } else {
+          const data = await res.json()
+          toast.error(data.error || 'Failed to update ticket type')
+          return
+        }
+      } else {
+        const res = await fetch('/api/admin/tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: ticketFormData.name,
+            price,
+            features,
+            icon: ticketFormData.icon,
+            popular: ticketFormData.popular,
+            sortOrder,
+          }),
+        })
+        if (res.ok) {
+          const newTicket = await res.json()
+          setTicketTypesList(prev => [...prev, { ...newTicket, purchaseCount: 0 }])
+        } else {
+          const data = await res.json()
+          toast.error(data.error || 'Failed to add ticket type')
+          return
+        }
+      }
+      handleCloseModal()
+    } catch { toast.error('An error occurred while saving') }
+  }, [ticketFormData, editingTicket, handleCloseModal])
+
   // ── CSV export ──────────────────────────────────────────
   const escapeCSV = useCallback((value: string | number) => {
     const str = String(value)
@@ -828,6 +960,16 @@ export function useAdminData() {
     usersList,
     handleBanUser,
     handleExportUsers,
+    // Tickets
+    ticketTypesList,
+    ticketFormData,
+    setTicketFormData,
+    editingTicket,
+    handleAddTicket,
+    handleEditTicket,
+    handleDeleteTicket,
+    handleToggleTicket,
+    handleSaveTicket,
     // Revenue
     totalRevenue,
     totalVotesSold,
