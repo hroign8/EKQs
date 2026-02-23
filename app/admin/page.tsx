@@ -349,10 +349,12 @@ export default function AdminPage() {
         {activeTab === 'tickets' && (
           <TicketsTab
             ticketTypesList={admin.ticketTypesList}
+            ticketPurchasesList={admin.ticketPurchasesList}
             onAddTicket={admin.handleAddTicket}
             onEditTicket={admin.handleEditTicket}
             onDeleteTicket={admin.handleDeleteTicket}
             onToggleTicket={admin.handleToggleTicket}
+            onVerifyPendingTickets={admin.handleVerifyPendingTickets}
           />
         )}
 

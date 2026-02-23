@@ -52,7 +52,7 @@ export async function GET() {
     const totalSpentTickets = tickets.reduce((sum, t) => sum + t.totalAmount, 0)
     const verifiedVotes = votes.filter((v) => v.verified).length
     const pendingVotes = votes.filter((v) => !v.verified).length
-    const confirmedTickets = tickets.filter((t) => t.status === 'completed').length
+    const confirmedTickets = tickets.filter((t) => t.status === 'confirmed').length
     const pendingTickets = tickets.filter((t) => t.status === 'pending').length
 
     return NextResponse.json({

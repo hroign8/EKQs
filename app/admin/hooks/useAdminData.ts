@@ -15,6 +15,7 @@ import type {
   EventFormData,
   AdminTicketType,
   TicketFormData,
+  TicketPurchaseEntry,
 } from '../types'
 import type { AdminUser } from '../components/UsersTab'
 import { getVotes, getTotalVotes } from '../types'
@@ -86,6 +87,7 @@ export function useAdminData() {
   })
   const [packageFormData, setPackageFormData] = useState({ name: '', votes: '', price: '' })
   const [ticketTypesList, setTicketTypesList] = useState<AdminTicketType[]>([])
+  const [ticketPurchasesList, setTicketPurchasesList] = useState<TicketPurchaseEntry[]>([])
   const [ticketFormData, setTicketFormData] = useState<TicketFormData>({
     name: '',
     price: '',
@@ -163,7 +165,9 @@ export function useAdminData() {
         setUsersList(await usersRes.json())
       }
       if (ticketsRes.ok) {
-        setTicketTypesList(await ticketsRes.json())
+        const ticketData = await ticketsRes.json()
+        setTicketTypesList(ticketData.types || [])
+        setTicketPurchasesList(ticketData.purchases || [])
       }
       if (eventRes.ok) {
         const data = await eventRes.json()
@@ -699,6 +703,25 @@ export function useAdminData() {
     } catch { toast.error('An error occurred while saving') }
   }, [ticketFormData, editingTicket, handleCloseModal])
 
+  const handleVerifyPendingTickets = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/tickets', { method: 'PATCH' })
+      const data = await res.json()
+      if (res.ok) {
+        if (data.verified > 0 || data.removed > 0) {
+          toast.success(data.message)
+          await fetchAdminData()
+        } else {
+          toast.info(data.message || 'No pending ticket purchases to verify')
+        }
+      } else {
+        toast.error(data.error || 'Failed to verify pending tickets')
+      }
+    } catch {
+      toast.error('Failed to verify pending tickets')
+    }
+  }, [fetchAdminData, toast])
+
   // ── CSV export ──────────────────────────────────────────
   const escapeCSV = useCallback((value: string | number) => {
     const str = String(value)
@@ -962,6 +985,7 @@ export function useAdminData() {
     handleExportUsers,
     // Tickets
     ticketTypesList,
+    ticketPurchasesList,
     ticketFormData,
     setTicketFormData,
     editingTicket,
@@ -970,6 +994,7 @@ export function useAdminData() {
     handleDeleteTicket,
     handleToggleTicket,
     handleSaveTicket,
+    handleVerifyPendingTickets,
     // Revenue
     totalRevenue,
     totalVotesSold,

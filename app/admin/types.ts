@@ -54,6 +54,18 @@ export type TicketFormData = {
   sortOrder: string
 }
 
+export type TicketPurchaseEntry = {
+  id: string
+  userName: string
+  userEmail: string
+  ticketType: string
+  quantity: number
+  totalAmount: number
+  status: string        // "pending" | "confirmed" | "failed"
+  transactionId: string | null
+  createdAt: string
+}
+
 export type AdvancedSettings = {
   maintenanceMode: boolean
   emailNotifications: boolean

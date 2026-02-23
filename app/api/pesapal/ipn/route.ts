@@ -91,6 +91,18 @@ export async function GET(request: NextRequest) {
         })
       }
     }
+    // Handle failed/reversed/cancelled ticket payments (status_code 2=failed, 3=reversed, 4=cancelled)
+    else if (status.status_code >= 2) {
+      const transaction = await prisma.pesapalTransaction.findUnique({
+        where: { orderTrackingId },
+      })
+      if (transaction?.transactionType === 'ticket') {
+        await prisma.ticketPurchase.updateMany({
+          where: { transactionId: orderTrackingId, status: 'pending' },
+          data: { status: 'failed' },
+        })
+      }
+    }
 
     return NextResponse.json({
       orderNotificationType: 'IPNCHANGE',

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
+import { getTransactionStatus } from '@/lib/pesapal'
 
 /**
  * GET /api/admin/tickets
@@ -11,14 +12,23 @@ export async function GET() {
   if (error) return error
 
   try {
-    const ticketTypes = await prisma.ticketType.findMany({
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        _count: { select: { purchases: true } },
-      },
-    })
+    const [ticketTypes, purchases] = await Promise.all([
+      prisma.ticketType.findMany({
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          _count: { select: { purchases: true } },
+        },
+      }),
+      prisma.ticketPurchase.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          ticketType: { select: { id: true, name: true, price: true } },
+        },
+      }),
+    ])
 
-    const result = ticketTypes.map((t) => ({
+    const types = ticketTypes.map((t) => ({
       id: t.id,
       name: t.name,
       price: t.price,
@@ -31,7 +41,19 @@ export async function GET() {
       createdAt: t.createdAt,
     }))
 
-    return NextResponse.json(result)
+    const purchasesList = purchases.map((p) => ({
+      id: p.id,
+      userName: p.user.name || 'Unknown',
+      userEmail: p.user.email,
+      ticketType: p.ticketType.name,
+      quantity: p.quantity,
+      totalAmount: p.totalAmount,
+      status: p.status,
+      transactionId: p.transactionId,
+      createdAt: p.createdAt,
+    }))
+
+    return NextResponse.json({ types, purchases: purchasesList })
   } catch (err) {
     console.error('Admin tickets fetch error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -158,6 +180,107 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Admin ticket delete error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+/**
+ * PATCH /api/admin/tickets
+ * Admin endpoint — verifies pending ticket purchases by checking PesaPal status.
+ * Follows the same pattern as PATCH /api/admin/votes.
+ */
+export async function PATCH() {
+  const { error } = await requireAdmin()
+  if (error) return error
+
+  try {
+    // Find all pending ticket purchases that have a PesaPal transaction ID
+    const pendingPurchases = await prisma.ticketPurchase.findMany({
+      where: { status: 'pending', transactionId: { not: null } },
+      select: { id: true, transactionId: true },
+    })
+
+    // Clean up orphaned purchases (no transactionId) older than 1 hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+    const orphanedResult = await prisma.ticketPurchase.deleteMany({
+      where: {
+        status: 'pending',
+        transactionId: null,
+        createdAt: { lt: oneHourAgo },
+      },
+    })
+
+    if (pendingPurchases.length === 0) {
+      const msg = orphanedResult.count > 0
+        ? `Removed ${orphanedResult.count} abandoned ticket purchase(s) with no payment`
+        : 'No pending ticket purchases to check'
+      return NextResponse.json({
+        verified: 0, checked: 0, removed: orphanedResult.count, message: msg,
+      })
+    }
+
+    // Deduplicate by transactionId
+    const uniqueTransactionIds = Array.from(new Set(
+      pendingPurchases.map(p => p.transactionId).filter((t): t is string => !!t)
+    ))
+
+    let verifiedCount = 0
+    let removedCount = 0
+    const errors: string[] = []
+
+    for (const orderTrackingId of uniqueTransactionIds) {
+      try {
+        const status = await getTransactionStatus(orderTrackingId)
+
+        // Update the PesaPal transaction record
+        await prisma.pesapalTransaction.updateMany({
+          where: { orderTrackingId },
+          data: {
+            status: status.payment_status_description,
+            statusCode: String(status.status_code),
+            paymentMethod: status.payment_method || undefined,
+            pesapalTransactionId: status.confirmation_code || undefined,
+          },
+        })
+
+        // status_code 1 = completed
+        if (status.status_code === 1) {
+          const result = await prisma.ticketPurchase.updateMany({
+            where: { transactionId: orderTrackingId, status: 'pending' },
+            data: { status: 'confirmed' },
+          })
+          verifiedCount += result.count
+        }
+        // status_code 2 = failed, 3 = reversed, 4 = cancelled
+        else if (status.status_code >= 2) {
+          const result = await prisma.ticketPurchase.updateMany({
+            where: { transactionId: orderTrackingId, status: 'pending' },
+            data: { status: 'failed' },
+          })
+          removedCount += result.count
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        console.error(`Failed to check ticket transaction ${orderTrackingId}:`, msg)
+        errors.push(`${orderTrackingId}: ${msg}`)
+      }
+    }
+
+    const totalRemoved = removedCount + orphanedResult.count
+    const parts: string[] = []
+    if (verifiedCount > 0) parts.push(`Confirmed ${verifiedCount} ticket purchase(s)`)
+    if (totalRemoved > 0) parts.push(`Marked ${removedCount} as failed, removed ${orphanedResult.count} abandoned`)
+    if (parts.length === 0) parts.push(`Checked ${uniqueTransactionIds.length} transaction(s), no changes`)
+
+    return NextResponse.json({
+      checked: uniqueTransactionIds.length,
+      verified: verifiedCount,
+      removed: totalRemoved,
+      errors: errors.length > 0 ? errors : undefined,
+      message: parts.join('. '),
+    })
+  } catch (err) {
+    console.error('Admin verify pending tickets error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
