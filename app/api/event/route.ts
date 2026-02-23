@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
-// Vote counts and event data change frequently but don't need to be
-// real-time — cache for 60 s on the Edge.
-export const revalidate = 60
+// Force dynamic so Vercel never statically caches a 404 from build time.
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/event
@@ -11,8 +10,9 @@ export const revalidate = 60
  */
 export async function GET() {
   try {
+    // Find the most recent event regardless of isActive — the old toggle
+    // logic could have set isActive:false, so we can't filter by it here.
     const event = await prisma.event.findFirst({
-      where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     })
 
