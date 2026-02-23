@@ -18,6 +18,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
     sendResetPassword: async ({ user, url }) => {
@@ -26,6 +27,8 @@ export const auth = betterAuth({
   },
 
   emailVerification: {
+    // Redirect to sign-in after the verification link is clicked
+    redirectTo: '/signin',
     sendVerificationEmail: async ({ user, url }) => {
       void sendVerificationEmail(user.email, url)
     },

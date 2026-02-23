@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
+// Vote counts and event data change frequently but don't need to be
+// real-time — cache for 60 s on the Edge.
+export const revalidate = 60
+
 /**
  * GET /api/event
  * Public endpoint — returns the active event data.
@@ -16,19 +20,28 @@ export async function GET() {
       return NextResponse.json({ error: 'No active event found' }, { status: 404 })
     }
 
-    // Get aggregate stats
-    const [totalVotesResult, uniqueVoterCount] = await Promise.all([
+    // Run both aggregations in parallel.
+    // uniqueVoters: use a MongoDB aggregation pipeline so we count distinct
+    // userIds server-side instead of pulling all groups into JS memory.
+    const [totalVotesResult, uniqueVoterDoc] = await Promise.all([
       prisma.vote.aggregate({
         _sum: { votesCount: true },
         where: { verified: true },
       }),
-      prisma.vote.groupBy({
-        by: ['userId'],
-        where: { verified: true },
-      }).then(groups => groups.length),
+      prisma.$runCommandRaw({
+        aggregate: 'vote',
+        pipeline: [
+          { $match: { verified: true } },
+          { $group: { _id: '$userId' } },
+          { $count: 'count' },
+        ],
+        cursor: {},
+      }) as Promise<{ cursor: { firstBatch: Array<{ count: number }> } }>,
     ])
 
-    return NextResponse.json({
+    const uniqueVoterCount = uniqueVoterDoc?.cursor?.firstBatch?.[0]?.count ?? 0
+
+    const response = NextResponse.json({
       id: event.id,
       name: event.name,
       tagline: event.tagline,
@@ -41,6 +54,8 @@ export async function GET() {
       uniqueVoters: uniqueVoterCount,
       votePrice: event.votePrice,
     })
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    return response
   } catch (error) {
     console.error('Failed to fetch event:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

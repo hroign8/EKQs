@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
+import { headers } from 'next/headers'
 import './globals.css'
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
@@ -72,11 +73,16 @@ export const viewport: Viewport = {
   themeColor: '#4a1942',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Read the nonce injected by middleware so Next.js stamps it on its own
+  // inline bootstrap scripts. Any custom <Script> components should also
+  // receive this nonce prop.
+  const nonce = (await headers()).get('x-nonce') ?? undefined
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${plusJakarta.className} antialiased`} suppressHydrationWarning>

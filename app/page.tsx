@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, lazy, Suspense } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { useContestants, useEvent } from '@/lib/hooks'
@@ -36,12 +36,6 @@ export default function Home() {
   }
 
   const topContestants = [...contestants].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0)).slice(0, 3)
-
-  const isLoading = contestantsLoading || eventLoading
-
-  if (isLoading) {
-    return <LoadingSpinner />
-  }
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -126,7 +120,15 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto">
-            {topContestants.map((contestant, index) => (
+            {contestantsLoading
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 flex flex-col items-center animate-pulse">
+                    <div className="w-32 h-32 rounded-full bg-gray-200 mb-4" />
+                    <div className="h-4 w-28 bg-gray-200 rounded mb-2" />
+                    <div className="h-3 w-20 bg-gray-100 rounded" />
+                  </div>
+                ))
+              : topContestants.map((contestant, index) => (
               <Link 
                 href={`/contestants/${contestant.id}`} 
                 key={contestant.id}

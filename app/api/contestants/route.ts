@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
+// Cache at the Next.js route layer: revalidate every 60 s.
+// Combined with the Cache-Control header below this means Vercel's Edge Network
+// serves cached HTML/JSON for up to 60 s before re-fetching from the DB.
+export const revalidate = 60
+
 /**
  * GET /api/contestants
  * Public endpoint — returns paginated active contestants with aggregated vote counts.
@@ -64,13 +69,17 @@ export async function GET(request: Request) {
       votes: { ...defaultVotes, ...(voteMap.get(c.id) || {}) },
     }))
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       contestants: result,
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
     })
+    // Tell the CDN to serve this for 60 s, and keep a stale copy available
+    // for up to 5 min while a fresh one is fetched in the background.
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    return response
   } catch (error) {
     console.error('Failed to fetch contestants:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

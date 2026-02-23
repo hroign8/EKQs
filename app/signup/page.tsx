@@ -19,6 +19,14 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  /** Rejects after `ms` milliseconds with a human-readable timeout error. */
+  function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timed out after ${ms / 1000}s. The server may be starting up — please try again.`)), ms)
+    )
+    return Promise.race([promise, timeout])
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !password || !confirmPassword) {
@@ -36,19 +44,18 @@ export default function SignUpPage() {
     setError("");
     setLoading(true);
     try {
-      const result = await signUp.email({
-        name: fullName,
-        email,
-        password,
-      });
+      const result = await withTimeout(
+        signUp.email({ name: fullName, email, password }),
+        20_000
+      );
       if (result.error) {
         setError(result.error.message || "Failed to create account.");
       } else {
         router.push("/");
         router.refresh();
       }
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -58,10 +65,16 @@ export default function SignUpPage() {
     setGoogleLoading(true);
     setError("");
     try {
-      const result = await signIn.social({ provider: "google", callbackURL: "/" });
+      const result = await signIn.social({
+        provider: "google",
+        callbackURL: "/",
+        disableRedirect: true,
+      });
       if (result?.error) {
         setError(result.error.message || "Google sign-up failed. Please try again.");
         setGoogleLoading(false);
+      } else if (result?.data?.url) {
+        window.location.href = result.data.url;
       }
     } catch (err) {
       console.error("Google sign-up error:", err);

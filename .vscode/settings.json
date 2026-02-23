@@ -2,5 +2,34 @@
   "css.customData": [],
   "css.lint.unknownAtRules": "ignore",
   "snyk.advanced.autoSelectOrganization": true,
-  "snyk.advanced.organization": "7d51dd70-5894-4b78-b9fe-cabc196be693"
+  "snyk.advanced.organization": "7d51dd70-5894-4b78-b9fe-cabc196be693",
+
+  // Prevent VS Code from watching/indexing large generated folders
+  "files.watcherExclude": {
+    "**/.next/**": true,
+    "**/node_modules/**": true,
+    "**/.git/**": true
+  },
+  "files.exclude": {
+    "**/.next": true,
+    "**/node_modules": true
+  },
+  "search.exclude": {
+    "**/.next/**": true,
+    "**/node_modules/**": true
+  },
+
+  // Limit TypeScript server memory to avoid OOM crashes (8 GB system)
+  "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.disableAutomaticTypeAcquisition": true,
+
+  // Prevent terminal from buffering excessive output (avoids crash on large build logs)
+  "terminal.integrated.scrollback": 1000,
+  "terminal.integrated.env.osx": {
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  },
+
+  // Reduce extension host memory pressure
+  "extensions.autoUpdate": false,
+  "editor.suggest.preview": false
 }

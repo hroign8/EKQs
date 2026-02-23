@@ -62,7 +62,7 @@ async function main() {
       name: 'Amara Okonkwo',
       country: 'Eritrea',
       gender: 'Male',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b1c5?w=400&h=400&fit=crop&crop=face',
+      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face',
       description: 'An environmental activist and model working to protect African wildlife. Amara founded a nonprofit that has planted over 50,000 trees across Nigeria.',
       rank: 3,
     },

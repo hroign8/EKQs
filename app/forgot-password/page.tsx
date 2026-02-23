@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
     setError("");
     setLoading(true);
     try {
-      await requestPasswordReset({ email, redirectTo: "/signin" });
+      await requestPasswordReset({ email, redirectTo: "/reset-password" });
       setSubmitted(true);
     } catch {
       // Always show success to prevent email enumeration

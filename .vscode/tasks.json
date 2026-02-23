@@ -6,10 +6,24 @@
 			"type": "shell",
 			"command": "npm run build",
 			"isBackground": false,
+			"options": {
+				"env": {
+					"NODE_OPTIONS": "--max-old-space-size=4096"
+				}
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			},
 			"problemMatcher": [
 				"$tsc"
 			],
-			"group": "build"
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
 		}
 	]
 }

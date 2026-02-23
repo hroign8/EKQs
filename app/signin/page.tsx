@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, Crown, Eye, EyeOff, Loader2 } from "lucide-react";
-import { signIn } from "@/lib/auth-client";
+import { signIn, sendVerificationEmail } from "@/lib/auth-client";
 import GoogleIcon from "@/components/GoogleIcon";
 
 export default function SignInPage() {
@@ -15,6 +15,17 @@ export default function SignInPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
+  /** Rejects after `ms` milliseconds with a human-readable timeout error. */
+  function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timed out after ${ms / 1000}s. The server may be starting up — please try again.`)), ms)
+    )
+    return Promise.race([promise, timeout])
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,15 +36,24 @@ export default function SignInPage() {
     setError("");
     setLoading(true);
     try {
-      const result = await signIn.email({ email, password });
+      const result = await withTimeout(
+        signIn.email({ email, password }),
+        20_000
+      );
       if (result.error) {
-        setError(result.error.message || "Invalid email or password.");
+        if (result.error.code === 'EMAIL_NOT_VERIFIED') {
+          setEmailNotVerified(true);
+          setError("Please verify your email before signing in.");
+        } else {
+          setEmailNotVerified(false);
+          setError(result.error.message || "Invalid email or password.");
+        }
       } else {
         router.push("/");
         router.refresh();
       }
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -43,10 +63,16 @@ export default function SignInPage() {
     setGoogleLoading(true);
     setError("");
     try {
-      const result = await signIn.social({ provider: "google", callbackURL: "/" });
+      const result = await signIn.social({
+        provider: "google",
+        callbackURL: "/",
+        disableRedirect: true,
+      });
       if (result?.error) {
         setError(result.error.message || "Google sign-in failed. Please try again.");
         setGoogleLoading(false);
+      } else if (result?.data?.url) {
+        window.location.href = result.data.url;
       }
     } catch (err) {
       console.error("Google sign-in error:", err);
@@ -148,6 +174,32 @@ export default function SignInPage() {
               {error && (
                 <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl">
                   {error}
+                  {emailNotVerified && (
+                    <div className="mt-2">
+                      {resendSuccess ? (
+                        <p className="text-green-700 font-semibold">Verification email sent! Check your inbox.</p>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={resendLoading}
+                          onClick={async () => {
+                            setResendLoading(true);
+                            try {
+                              await sendVerificationEmail({ email, callbackURL: '/signin' });
+                              setResendSuccess(true);
+                            } catch {
+                              // ignore — user can try again
+                            } finally {
+                              setResendLoading(false);
+                            }
+                          }}
+                          className="underline font-semibold text-red-700 hover:text-red-900 disabled:opacity-50"
+                        >
+                          {resendLoading ? 'Sending…' : 'Resend verification email'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               <button 
