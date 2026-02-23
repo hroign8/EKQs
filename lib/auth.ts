@@ -15,6 +15,9 @@ const resolvedBaseURL =
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
   'http://localhost:3001'
 
+const googleClientId = process.env.GOOGLE_CLIENT_ID
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
+
 export const auth = betterAuth({
   baseURL: resolvedBaseURL,
   database: prismaAdapter(prisma, {
@@ -46,13 +49,14 @@ export const auth = betterAuth({
     },
   },
 
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      enabled: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+  ...(googleClientId && googleClientSecret ? {
+    socialProviders: {
+      google: {
+        clientId: googleClientId,
+        clientSecret: googleClientSecret,
+      },
     },
-  },
+  } : {}),
 
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
