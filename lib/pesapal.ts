@@ -98,7 +98,7 @@ export async function getPesapalToken(): Promise<string> {
   const data: PesapalAuthResponse = await response.json()
 
   if (data.error) {
-    throw new Error(`PesaPal auth error: ${data.error}`)
+    throw new Error(`PesaPal auth error: ${JSON.stringify(data.error)}`)
   }
 
   // Cache token with 5-minute buffer before expiry

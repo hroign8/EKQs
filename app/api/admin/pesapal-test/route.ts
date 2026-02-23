@@ -36,7 +36,22 @@ export async function GET() {
     const token = await getPesapalToken()
     results.authToken = { success: true, tokenPreview: token.slice(0, 20) + '...' }
   } catch (err) {
-    results.authToken = { success: false, error: String(err) }
+    // Also fetch raw response to expose the full PesaPal error body
+    try {
+      const apiUrl = process.env.PESAPAL_API_URL || 'https://cybqa.pesapal.com/pesapalv3'
+      const rawRes = await fetch(`${apiUrl}/api/Auth/RequestToken`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          consumer_key: process.env.PESAPAL_CONSUMER_KEY,
+          consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
+        }),
+      })
+      const rawBody = await rawRes.json()
+      results.authToken = { success: false, error: String(err), httpStatus: rawRes.status, rawBody }
+    } catch (fetchErr) {
+      results.authToken = { success: false, error: String(err), fetchError: String(fetchErr) }
+    }
     return NextResponse.json(results)
   }
 
