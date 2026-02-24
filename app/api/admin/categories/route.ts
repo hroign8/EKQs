@@ -66,3 +66,69 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+/**
+ * PUT /api/admin/categories
+ * Admin endpoint — updates an existing voting category.
+ */
+export async function PUT(request: Request) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
+  try {
+    const body = await request.json()
+    const { id, name } = body
+
+    if (!id) {
+      return errorResponse('Category ID is required')
+    }
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return errorResponse('Category name is required')
+    }
+
+    const existing = await prisma.votingCategory.findUnique({ where: { id } })
+    if (!existing) {
+      return errorResponse('Category not found', 404)
+    }
+
+    const category = await prisma.votingCategory.update({
+      where: { id },
+      data: { name: name.trim() },
+    })
+
+    return NextResponse.json(category)
+  } catch (err) {
+    console.error('Admin category update error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+/**
+ * DELETE /api/admin/categories
+ * Admin endpoint — deletes a voting category.
+ */
+export async function DELETE(request: Request) {
+  const { error } = await requireAdmin()
+  if (error) return error
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return errorResponse('Category ID is required')
+    }
+
+    const existing = await prisma.votingCategory.findUnique({ where: { id } })
+    if (!existing) {
+      return errorResponse('Category not found', 404)
+    }
+
+    await prisma.votingCategory.delete({ where: { id } })
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('Admin category delete error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
