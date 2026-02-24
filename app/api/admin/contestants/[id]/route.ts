@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
+import { contestantSchema } from '@/lib/validations'
+
+// Partial schema for updates — only provided fields are validated
+const updateFieldsSchema = contestantSchema.partial()
 
 /**
  * PUT /api/admin/contestants/[id]
@@ -24,16 +28,22 @@ export async function PUT(
 
     // Whitelist allowed fields
     const allowedFields = ['name', 'country', 'gender', 'image', 'description', 'rank', 'isActive'] as const
-    const data: Record<string, unknown> = {}
+    const raw: Record<string, unknown> = {}
     for (const key of allowedFields) {
       if (key in body) {
-        data[key] = body[key]
+        raw[key] = body[key]
       }
+    }
+
+    // Validate values with Zod
+    const parsed = updateFieldsSchema.safeParse(raw)
+    if (!parsed.success) {
+      return errorResponse(parsed.error.issues[0]?.message || 'Validation failed')
     }
 
     const contestant = await prisma.contestant.update({
       where: { id },
-      data,
+      data: parsed.data,
     })
 
     return NextResponse.json(contestant)

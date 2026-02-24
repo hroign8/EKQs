@@ -80,8 +80,18 @@ export async function PUT(request: Request) {
     // Build the data to update — only include fields that were sent
     const data: Record<string, unknown> = {}
     if (typeof updates.name === 'string') data.name = updates.name
-    if (typeof updates.votes === 'number') data.votes = updates.votes
-    if (typeof updates.price === 'number') data.price = updates.price
+    if (typeof updates.votes === 'number') {
+      if (!Number.isInteger(updates.votes) || updates.votes < 1) {
+        return errorResponse('Votes must be a positive integer')
+      }
+      data.votes = updates.votes
+    }
+    if (typeof updates.price === 'number') {
+      if (updates.price < 0) {
+        return errorResponse('Price must be zero or positive')
+      }
+      data.price = updates.price
+    }
     if (typeof updates.isActive === 'boolean') data.isActive = updates.isActive
     if (typeof updates.slug === 'string') data.slug = updates.slug
 

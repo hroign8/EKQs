@@ -4,6 +4,9 @@ import { requireAuth, errorResponse } from '@/lib/api-utils'
 import { ticketPurchaseSchema } from '@/lib/validations'
 import { submitOrder, registerIPN } from '@/lib/pesapal'
 import { randomUUID } from 'crypto'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const ticketLimiter = createRateLimiter('ticket-purchase', 5, 60_000) // 5 per minute
 
 /**
  * POST /api/tickets
@@ -13,6 +16,12 @@ export async function POST(request: Request) {
   try {
     const { session, error } = await requireAuth()
     if (error) return error
+
+    // Rate limit per user
+    const rl = ticketLimiter.check(session!.user.id)
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
 
     const body = await request.json()
     const parsed = ticketPurchaseSchema.safeParse(body)

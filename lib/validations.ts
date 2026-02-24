@@ -61,6 +61,19 @@ export const ticketPurchaseSchema = z.object({
 
 export type TicketPurchaseInput = z.infer<typeof ticketPurchaseSchema>
 
+// ─── Ticket Type Validation (Admin) ──────────────────────────
+
+export const ticketTypeSchema = z.object({
+  name: z.string().min(1, 'Ticket name is required').max(100),
+  price: z.number().nonnegative('Price must be zero or positive'),
+  features: z.array(z.string().max(200)).max(20).default([]),
+  icon: z.string().max(50).default('ticket'),
+  popular: z.boolean().default(false),
+  sortOrder: z.number().int().nonnegative().default(0),
+})
+
+export type TicketTypeInput = z.infer<typeof ticketTypeSchema>
+
 // ─── Category Validation (Admin) ─────────────────────────────
 
 export const categorySchema = z.object({

@@ -149,7 +149,7 @@ export default function UsersTab({ usersList, onBanUser, onExportUsers }: UsersT
                     </div>
                   </td>
                   <td className="px-4 sm:px-6 py-3 text-gray-500 hidden md:table-cell whitespace-nowrap">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td className="px-4 sm:px-6 py-3 hidden sm:table-cell">
                     <span className="font-semibold text-burgundy-900">{user._count.votes}</span>

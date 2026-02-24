@@ -26,6 +26,20 @@ export async function GET(request: NextRequest) {
     // Get transaction status from PesaPal
     const status = await getTransactionStatus(orderTrackingId)
 
+    // Idempotency: skip re-processing if transaction is already in a terminal state
+    const existingTx = await prisma.pesapalTransaction.findUnique({
+      where: { orderTrackingId },
+      select: { statusCode: true },
+    })
+    if (existingTx && ['1', '2', '3', '4'].includes(existingTx.statusCode || '')) {
+      return NextResponse.json({
+        orderNotificationType: 'IPNCHANGE',
+        orderTrackingId,
+        orderMerchantReference,
+        status: 'already_processed',
+      })
+    }
+
     // Update transaction record
     await prisma.pesapalTransaction.update({
       where: { orderTrackingId },
@@ -104,11 +118,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Return sanitized status (don't reflect raw PesaPal description to prevent XSS)
+    const safeStatuses: Record<number, string> = { 0: 'pending', 1: 'completed', 2: 'failed', 3: 'reversed', 4: 'cancelled' }
     return NextResponse.json({
       orderNotificationType: 'IPNCHANGE',
       orderTrackingId,
       orderMerchantReference,
-      status: status.payment_status_description,
+      status: safeStatuses[status.status_code] ?? 'unknown',
     })
   } catch (error) {
     console.error('PesaPal IPN error:', error)

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
 import { getTransactionStatus } from '@/lib/pesapal'
+import { ticketTypeSchema } from '@/lib/validations'
 
 /**
  * GET /api/admin/tickets
@@ -70,24 +71,14 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { name, price, features, icon, popular, sortOrder } = body
+    const parsed = ticketTypeSchema.safeParse(body)
 
-    if (!name || typeof name !== 'string') {
-      return errorResponse('Ticket name is required')
-    }
-    if (typeof price !== 'number' || price < 0) {
-      return errorResponse('Valid price is required')
+    if (!parsed.success) {
+      return errorResponse(parsed.error.issues[0]?.message || 'Validation failed')
     }
 
     const ticket = await prisma.ticketType.create({
-      data: {
-        name: name.trim(),
-        price,
-        features: Array.isArray(features) ? features : [],
-        icon: icon || 'ticket',
-        popular: popular === true,
-        sortOrder: typeof sortOrder === 'number' ? sortOrder : 0,
-      },
+      data: parsed.data,
     })
 
     return NextResponse.json({ ...ticket, purchaseCount: 0 }, { status: 201 })
@@ -120,7 +111,12 @@ export async function PUT(request: Request) {
 
     const data: Record<string, unknown> = {}
     if (typeof updates.name === 'string') data.name = updates.name.trim()
-    if (typeof updates.price === 'number') data.price = updates.price
+    if (typeof updates.price === 'number') {
+      if (updates.price < 0) {
+        return errorResponse('Price must be zero or positive')
+      }
+      data.price = updates.price
+    }
     if (Array.isArray(updates.features)) data.features = updates.features
     if (typeof updates.icon === 'string') data.icon = updates.icon
     if (typeof updates.popular === 'boolean') data.popular = updates.popular

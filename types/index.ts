@@ -130,7 +130,7 @@ export type TicketEntry = {
   ticketName: string
   quantity: number
   totalAmount: number
-  status: string
+  status: 'pending' | 'confirmed' | 'failed'
   createdAt: string
 }
 

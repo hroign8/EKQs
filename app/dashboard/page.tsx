@@ -370,7 +370,7 @@ export default function DashboardPage() {
                       <div className="min-w-0">
                         <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Member Since</p>
                         <p className="text-sm font-bold text-burgundy-900">
-                          {account?.createdAt ? new Date(account.createdAt).toLocaleDateString() : '—'}
+                          {account?.createdAt ? new Date(account.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                         </p>
                       </div>
                     </div>
@@ -461,7 +461,7 @@ export default function DashboardPage() {
                           )}
                         </div>
                         <p className="text-xs text-gray-400 flex-shrink-0 hidden sm:block font-medium">
-                          {new Date(v.createdAt).toLocaleDateString()}
+                          {new Date(v.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       </div>
                     ))}
@@ -568,7 +568,7 @@ export default function DashboardPage() {
                               </span>
                             )}
                             <span className="text-xs text-gray-400 font-medium">
-                              {new Date(m.createdAt).toLocaleDateString()}
+                              {new Date(m.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                           </div>
                         </div>

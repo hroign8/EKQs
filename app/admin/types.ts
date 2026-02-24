@@ -61,7 +61,7 @@ export type TicketPurchaseEntry = {
   ticketType: string
   quantity: number
   totalAmount: number
-  status: string        // "pending" | "confirmed" | "failed"
+  status: 'pending' | 'confirmed' | 'failed'
   transactionId: string | null
   createdAt: string
 }

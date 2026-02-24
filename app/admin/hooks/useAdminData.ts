@@ -830,7 +830,7 @@ export function useAdminData() {
       u.banned ? 'Yes' : 'No',
       u._count.votes,
       u._count.tickets,
-      new Date(u.createdAt).toLocaleDateString(),
+      new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     ].map(v => {
       const str = String(v)
       return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str
