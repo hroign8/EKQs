@@ -46,6 +46,7 @@ export default function Home() {
             src="/crown.jpeg" 
             alt="" 
             fill
+            sizes="100vw"
             className="object-cover opacity-10"
             priority
           />
@@ -56,6 +57,7 @@ export default function Home() {
               src="/crown.jpeg" 
               alt="Crown" 
               fill
+              sizes="(max-width: 640px) 64px, (max-width: 768px) 80px, 112px"
               className="object-cover"
               priority
             />
@@ -145,6 +147,7 @@ export default function Home() {
                         fill
                         className="object-cover"
                         sizes="128px"
+                        priority={index === 0}
                       />
                     </div>
                     <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
