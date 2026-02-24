@@ -32,6 +32,16 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
+
+    // Auto-generate slug from name if not provided
+    if (!body.slug && body.name) {
+      body.slug = body.name
+        .trim()
+        .replace(/\s+/g, '')                       // remove spaces  → "People'sChoice"
+        .replace(/[^a-zA-Z0-9]/g, '')              // strip non-alphanumeric
+        .replace(/^(.)/, (_: string, c: string) => c.toLowerCase())  // camelCase first char
+    }
+
     const parsed = categorySchema.safeParse(body)
 
     if (!parsed.success) {
