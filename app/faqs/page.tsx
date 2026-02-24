@@ -65,7 +65,7 @@ const faqs = [
       },
       {
         q: 'What categories do contestants compete in?',
-        a: "Contestants compete in four main categories: People's Choice, Best Talent, Best Evening Wear, and Miss Photogenic.",
+        a: "Contestants compete in four main categories: People's Choice, Best Talent, Best Fashion, Confidence, and Miss Photogenic.",
       },
       {
         q: 'Can I nominate someone as a contestant?',
