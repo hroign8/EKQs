@@ -11,16 +11,15 @@ export function escapeHtml(value: string): string {
 }
 
 /**
- * Format a DD/MM/YYYY date string into a human-readable format.
- * @param dateStr - Date string in DD/MM/YYYY format
+ * Format a "DD/MM/YYYY" or "DD/MM/YYYY HH:MM" date string into a human-readable format.
+ * @param dateStr - Date string in DD/MM/YYYY or DD/MM/YYYY HH:MM format
  * @param options - Intl.DateTimeFormatOptions (defaults to full date with weekday)
  */
 export function formatDate(
   dateStr: string,
   options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
 ): string {
-  const [day, month, year] = dateStr.split('/').map(Number)
-  const date = new Date(year, month - 1, day)
+  const date = parseLocalDate(dateStr)
   return date.toLocaleDateString('en-US', options)
 }
 
@@ -50,10 +49,15 @@ export function rankBadgeClasses(index: number): string {
 }
 
 /**
- * Parse a DD/MM/YYYY date string into a local-time Date object.
+ * Parse a "DD/MM/YYYY" or "DD/MM/YYYY HH:MM" date string into a local-time Date object.
  * Single shared helper — prevents duplicated parsing logic across API routes and components.
  */
 export function parseLocalDate(dateStr: string): Date {
-  const [day, month, year] = dateStr.split('/').map(Number)
+  const [datePart, timePart] = dateStr.split(' ')
+  const [day, month, year] = datePart.split('/').map(Number)
+  if (timePart) {
+    const [hours, minutes] = timePart.split(':').map(Number)
+    return new Date(year, month - 1, day, hours, minutes)
+  }
   return new Date(year, month - 1, day)
 }

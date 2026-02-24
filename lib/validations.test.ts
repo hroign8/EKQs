@@ -129,6 +129,18 @@ describe('eventSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('passes with DD/MM/YYYY HH:MM dates', () => {
+    const result = eventSchema.safeParse({
+      name: 'EKQ 2026',
+      tagline: 'Celebrating excellence',
+      startDate: '22/03/2026',
+      endDate: '22/03/2026',
+      votingStart: '01/02/2026',
+      votingEnd: '21/03/2026 12:00',
+    })
+    expect(result.success).toBe(true)
+  })
+
   it('fails with wrong date format', () => {
     const result = eventSchema.safeParse({
       name: 'EKQ 2026',

@@ -129,7 +129,7 @@ async function main() {
         startDate: '22/03/2026',
         endDate: '22/03/2026',
         votingStart: '01/02/2026',
-        votingEnd: '21/03/2026',
+        votingEnd: '21/03/2026 12:00',
         isActive: true,
         votingOpen: true,
         votePrice: 0.30,

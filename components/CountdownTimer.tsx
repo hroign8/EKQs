@@ -26,7 +26,11 @@ export default function CountdownTimer({ endDate, eventDate }: { endDate: string
   useEffect(() => {
     const calculateTimeRemaining = () => {
       const base = parseLocalDate(targetDate)
-      const endDateTime = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999)
+      // If the date string includes a time (HH:MM), use it; otherwise default to end of day
+      const hasTime = targetDate.includes(' ')
+      const endDateTime = hasTime
+        ? base
+        : new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999)
       const now = new Date()
 
       const difference = endDateTime.getTime() - now.getTime()
