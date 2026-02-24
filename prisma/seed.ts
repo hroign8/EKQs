@@ -126,10 +126,10 @@ async function main() {
       data: {
         name: 'Eritrean Kings & Queens',
         tagline: 'Celebrating Excellence & Beauty',
-        startDate: '15/03/2026',
-        endDate: '17/03/2026',
+        startDate: '22/03/2026',
+        endDate: '22/03/2026',
         votingStart: '01/02/2026',
-        votingEnd: '16/03/2026',
+        votingEnd: '21/03/2026',
         isActive: true,
         votingOpen: true,
         votePrice: 0.30,
