@@ -98,7 +98,8 @@ export default function Footer() {
             <ul className="space-y-3 text-burgundy-200">
               <li>21a UK Mall, Kansanga</li>
               <li>info@ekqs.com</li>
-              <li>+256-700123456</li>
+              <li>+256-708203858</li>
+              <li>+256-756531948</li>
               <li>Kampala, Uganda</li>
             </ul>
           </div>

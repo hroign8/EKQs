@@ -206,7 +206,6 @@ const TicketingPage: React.FC = () => {
                   <h3 className="text-2xl font-bold text-burgundy-900 mb-1">{ticket.name}</h3>
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-black text-gold-500">{formatPrice(ticket.price)}</span>
-                    <span className="text-gray-500 text-sm">/person</span>
                   </div>
                 </div>
                 
