@@ -71,6 +71,7 @@ export async function GET() {
 
   try {
     const contestants = await prisma.contestant.findMany({
+      where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json(contestants)
