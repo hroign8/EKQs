@@ -78,7 +78,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="text-xs font-medium text-gray-400 mb-0.5">Email</p>
-                      <p className="font-semibold text-burgundy-900">info@eritreakingsqueens.org</p>
+                      <p className="font-semibold text-burgundy-900">info@ekqs.com</p>
                     </div>
                   </div>
 
@@ -88,7 +88,8 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="text-xs font-medium text-gray-400 mb-0.5">Phone</p>
-                      <p className="font-semibold text-burgundy-900">+256 700 123 456</p>
+                      <p className="font-semibold text-burgundy-900">+256-708203858</p>
+                      <p className="font-semibold text-burgundy-900">+256-756531948</p>
                     </div>
                   </div>
 

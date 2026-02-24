@@ -44,7 +44,7 @@ const faqs = [
       },
       {
         q: 'Can I get a refund on my ticket?',
-        a: 'Ticket refunds are available up to 7 days before the event. Please contact us at info@eritreakingsqueens.org for refund requests.',
+        a: 'Ticket refunds are available up to 7 days before the event. Please contact us at info@ekqs.com for refund requests.',
       },
       {
         q: 'Where is the event held?',
@@ -82,11 +82,11 @@ const faqs = [
       },
       {
         q: 'How can I sponsor or partner with the event?',
-        a: 'We welcome sponsorship and partnership inquiries. Please reach out to us at info@eritreakingsqueens.org with your proposal.',
+        a: 'We welcome sponsorship and partnership inquiries. Please reach out to us at info@ekqs.com with your proposal.',
       },
       {
         q: 'How do I contact the organizers?',
-        a: 'You can reach us via email at info@eritreakingsqueens.org, by phone at +256 700 123 456, or through our contact page.',
+        a: 'You can reach us via email at info@ekqs.com, by phone at +256-708203858 or +256-756531948, or through our contact page.',
       },
     ],
   },

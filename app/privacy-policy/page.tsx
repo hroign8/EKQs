@@ -220,7 +220,8 @@ export default function PrivacyPolicyPage() {
             </div>
             <p className="text-gray-600 mb-4">If you have any questions or concerns about this Privacy Policy, please contact us:</p>
             <div className="space-y-2 text-sm">
-              <p className="text-gray-600"><strong className="text-burgundy-900">Email:</strong> info@eritreankingsqueens.com</p>
+              <p className="text-gray-600"><strong className="text-burgundy-900">Email:</strong> info@ekqs.com</p>
+              <p className="text-gray-600"><strong className="text-burgundy-900">Phone:</strong> +256-708203858 / +256-756531948</p>
               <p className="text-gray-600"><strong className="text-burgundy-900">Website:</strong> <Link href="/contact" className="text-gold-500 hover:text-gold-600 transition-colors">Contact Page</Link></p>
             </div>
           </div>
