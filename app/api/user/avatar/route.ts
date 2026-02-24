@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/db'
-import { writeFile, mkdir, unlink } from 'fs/promises'
-import path from 'path'
+import { put, del } from '@vercel/blob'
 import { createRateLimiter } from '@/lib/rate-limit'
 
 const uploadLimiter = createRateLimiter('avatar-upload', 5, 60_000) // 5 per minute
@@ -62,25 +61,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File content does not match the declared image type.' }, { status: 400 })
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'avatars')
-    await mkdir(uploadsDir, { recursive: true })
-
-    // Delete old avatar file if it exists
+    // Delete old avatar blob if it exists
     const currentUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { image: true } })
-    if (currentUser?.image?.startsWith('/uploads/avatars/')) {
-      const oldPath = path.join(process.cwd(), 'public', currentUser.image)
-      try { await unlink(oldPath) } catch { /* file may already be gone */ }
+    if (currentUser?.image?.startsWith('https://') && currentUser.image.includes('.vercel-storage.com')) {
+      try { await del(currentUser.image) } catch { /* blob may already be gone */ }
     }
 
-    // Generate unique filename
-    const filename = `${session.user.id}-${Date.now()}.${ext}`
-    const filepath = path.join(uploadsDir, filename)
-
-    await writeFile(filepath, buffer)
+    // Upload to Vercel Blob
+    const filename = `avatars/${session.user.id}-${Date.now()}.${ext}`
+    const { url } = await put(filename, buffer, {
+      access: 'public',
+      contentType: file.type,
+    })
 
     // Update user's image in database
-    const imageUrl = `/uploads/avatars/${filename}`
+    const imageUrl = url
     await prisma.user.update({
       where: { id: session.user.id },
       data: { image: imageUrl },

@@ -269,7 +269,7 @@ export function useAdminData() {
 
   /**
    * Two-click delete guard — replaces blocking confirm() dialogs.
-   * First call shows a toast; second call within 5 s executes the action.
+   * First call shows a toast; second call within 3 s executes the action.
    */
   const requireDeleteConfirm = useCallback((key: string, action: () => Promise<void>) => {
     if (deleteConfirmRef.current?.key === key) {
@@ -281,9 +281,9 @@ export function useAdminData() {
     if (deleteConfirmRef.current) {
       clearTimeout(deleteConfirmRef.current.timeout)
     }
-    const timeout = setTimeout(() => { deleteConfirmRef.current = null }, 5000)
+    const timeout = setTimeout(() => { deleteConfirmRef.current = null }, 3000)
     deleteConfirmRef.current = { key, timeout }
-    toast.error('Click again within 5 seconds to confirm.')
+    toast.error('Click again within 3 seconds to confirm.')
   }, [toast])
 
   // ── Contestant handlers ─────────────────────────────────

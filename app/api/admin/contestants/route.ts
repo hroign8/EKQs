@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
 import { contestantSchema, updateContestantSchema } from '@/lib/validations'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
+import { put, del } from '@vercel/blob'
 import crypto from 'crypto'
 
 /**
@@ -21,7 +20,7 @@ function hasValidMagicBytes(buffer: Buffer, ext: string): boolean {
  * Save a base64 data URI to disk and return the public URL path.
  * If the value is already a URL or file path, returns it unchanged.
  */
-async function saveImageToDisk(imageValue: string): Promise<string> {
+async function saveImageToBlob(imageValue: string): Promise<string> {
   // If it's already a URL or relative path, keep it
   if (!imageValue.startsWith('data:')) {
     return imageValue
@@ -53,14 +52,13 @@ async function saveImageToDisk(imageValue: string): Promise<string> {
     throw new Error('Image content does not match the declared image type')
   }
 
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'contestants')
-  await mkdir(uploadsDir, { recursive: true })
+  const filename = `contestants/${crypto.randomUUID()}.${ext}`
+  const { url } = await put(filename, buffer, {
+    access: 'public',
+    contentType: `image/${rawType === 'jpg' ? 'jpeg' : rawType}`,
+  })
 
-  const filename = `${crypto.randomUUID()}.${ext}`
-  const filepath = path.join(uploadsDir, filename)
-  await writeFile(filepath, buffer)
-
-  return `/uploads/contestants/${filename}`
+  return url
 }
 
 /**
@@ -108,7 +106,7 @@ export async function POST(request: Request) {
     let imageUrl = rawImage
     if (rawImage.startsWith('data:')) {
       try {
-        imageUrl = await saveImageToDisk(rawImage)
+        imageUrl = await saveImageToBlob(rawImage)
       } catch (imgErr) {
         return errorResponse(imgErr instanceof Error ? imgErr.message : 'Image upload failed')
       }
@@ -159,7 +157,7 @@ export async function PUT(request: Request) {
     let savedImage: string | undefined = rawImage
     if (rawImage?.startsWith('data:')) {
       try {
-        savedImage = await saveImageToDisk(rawImage)
+        savedImage = await saveImageToBlob(rawImage)
       } catch (imgErr) {
         return errorResponse(imgErr instanceof Error ? imgErr.message : 'Image upload failed')
       }
@@ -174,6 +172,11 @@ export async function PUT(request: Request) {
     const existing = await prisma.contestant.findUnique({ where: { id } })
     if (!existing) {
       return errorResponse('Contestant not found', 404)
+    }
+
+    // Delete old blob image if being replaced with a new one
+    if (savedImage && existing.image?.startsWith('https://') && existing.image.includes('.vercel-storage.com')) {
+      try { await del(existing.image) } catch { /* blob may already be gone */ }
     }
 
     const contestant = await prisma.contestant.update({
@@ -207,6 +210,11 @@ export async function DELETE(request: Request) {
     const existing = await prisma.contestant.findUnique({ where: { id } })
     if (!existing) {
       return errorResponse('Contestant not found', 404)
+    }
+
+    // Clean up blob image when soft-deleting
+    if (existing.image?.startsWith('https://') && existing.image.includes('.vercel-storage.com')) {
+      try { await del(existing.image) } catch { /* blob may already be gone */ }
     }
 
     await prisma.contestant.update({
