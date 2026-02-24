@@ -15,6 +15,33 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // ── CSRF / Origin check for state-changing API requests ────────────────────
+  // Reject POST/PUT/PATCH/DELETE API calls whose Origin doesn't match the app.
+  const method = request.method.toUpperCase()
+  if (
+    pathname.startsWith('/api/') &&
+    !pathname.startsWith('/api/pesapal/') &&   // PesaPal IPN comes from their servers
+    !pathname.startsWith('/api/auth/') &&       // better-auth handles its own CSRF
+    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
+  ) {
+    const origin = request.headers.get('origin')
+    if (origin) {
+      const allowed = [
+        process.env.NEXT_PUBLIC_APP_URL,
+        process.env.VERCEL_PROJECT_PRODUCTION_URL
+          ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+          : null,
+        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+      ].filter(Boolean) as string[]
+
+      // In development, also allow localhost origins
+      const isLocalhost = origin.startsWith('http://localhost')
+      if (!isLocalhost && allowed.length > 0 && !allowed.includes(origin)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
+  }
+
   // ── Content Security Policy ────────────────────────────────────────────────
   // Generate a fresh base64 nonce for every request.
   const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64')

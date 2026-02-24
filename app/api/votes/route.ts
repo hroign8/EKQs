@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     if (error) return error
 
     // Rate limit by user ID
-    const check = limiter.check(session!.user.id)
+    const check = await limiter.check(session!.user.id)
     if (!check.allowed) {
       return errorResponse('Too many vote attempts. Please wait a moment.')
     }

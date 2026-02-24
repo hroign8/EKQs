@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit per user
-    const rl = uploadLimiter.check(session.user.id)
+    const rl = await uploadLimiter.check(session.user.id)
     if (!rl.allowed) {
       return NextResponse.json({ error: 'Too many uploads. Try again later.' }, { status: 429 })
     }

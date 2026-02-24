@@ -14,8 +14,9 @@ const limiter = createRateLimiter('contact', 5, 60_000) // 5 per minute
 export async function POST(request: Request) {
   try {
     // Rate limit by IP
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const check = limiter.check(ip)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
     if (!check.allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },

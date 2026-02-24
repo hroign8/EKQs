@@ -9,6 +9,8 @@ interface TicketCardProps {
   eventName?: string
   eventDate?: string
   venue?: string
+  /** Currency-aware price formatter. Falls back to `$` + `.toFixed(2)`. */
+  formatPrice?: (usd: number) => string
 }
 
 /**
@@ -21,6 +23,7 @@ export default function TicketCard({
   eventName = 'EKQs Pageant',
   eventDate,
   venue = 'Grand Hub, Kampala',
+  formatPrice = (v) => `$${v.toFixed(2)}`,
 }: TicketCardProps) {
   const isConfirmed = ticket.status === 'confirmed'
   const isPending = ticket.status === 'pending'
@@ -133,7 +136,7 @@ export default function TicketCard({
           {/* Bottom: price + date bought */}
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-dashed border-gray-200/80">
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-black text-burgundy-900">${ticket.totalAmount.toFixed(2)}</span>
+              <span className="text-xl font-black text-burgundy-900">{formatPrice(ticket.totalAmount)}</span>
               <span className={`text-[10px] font-bold uppercase ml-1 px-1.5 py-0.5 rounded ${tier.nameBg}`}>
                 {ticket.ticketName}
               </span>

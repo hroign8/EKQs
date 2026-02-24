@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     if (error) return error
 
     // Rate limit per user
-    const rl = ticketLimiter.check(session!.user.id)
+    const rl = await ticketLimiter.check(session!.user.id)
     if (!rl.allowed) {
       return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
     }

@@ -1,17 +1,14 @@
 /**
- * Simple in-memory rate limiter for API routes.
+ * MongoDB-backed rate limiter for API routes.
  *
- * Uses a sliding-window approach per key (usually IP address).
- * Not suitable for multi-instance deployments — use Redis-based
- * limiting in production clusters.
+ * Uses Prisma to persist rate-limit counters in the `rate_limit` collection,
+ * which survives serverless cold starts (unlike an in-memory Map).
+ *
+ * Each limiter+key combo is stored as a single document with an `expiresAt`
+ * timestamp. When the window expires the counter is reset atomically.
  */
 
-interface RateLimitEntry {
-  count: number
-  resetTime: number
-}
-
-const stores = new Map<string, Map<string, RateLimitEntry>>()
+import { prisma } from '@/lib/db'
 
 /**
  * Create a rate limiter for a specific purpose.
@@ -21,39 +18,57 @@ const stores = new Map<string, Map<string, RateLimitEntry>>()
  * @param windowMs – window length in milliseconds (default 60 000 = 1 min)
  */
 export function createRateLimiter(name: string, limit: number, windowMs = 60_000) {
-  if (!stores.has(name)) {
-    stores.set(name, new Map())
-  }
-  const store = stores.get(name)!
-
-  // Periodically clean expired entries (every 5 minutes)
-  setInterval(() => {
-    const now = Date.now()
-    store.forEach((entry, key) => {
-      if (now > entry.resetTime) store.delete(key)
-    })
-  }, 5 * 60_000).unref?.()
-
   return {
     /**
      * Check whether the key is within limits.
      * Returns `{ allowed: true, remaining }` or `{ allowed: false, retryAfterMs }`.
      */
-    check(key: string): { allowed: true; remaining: number } | { allowed: false; retryAfterMs: number } {
-      const now = Date.now()
-      const entry = store.get(key)
+    async check(key: string): Promise<
+      { allowed: true; remaining: number } | { allowed: false; retryAfterMs: number }
+    > {
+      const compositeKey = `${name}:${key}`
+      const now = new Date()
 
-      if (!entry || now > entry.resetTime) {
-        store.set(key, { count: 1, resetTime: now + windowMs })
-        return { allowed: true, remaining: limit - 1 }
+      try {
+        const entry = await prisma.rateLimitEntry.findUnique({
+          where: { key: compositeKey },
+        })
+
+        // No entry or window expired → reset the counter
+        if (!entry || entry.expiresAt <= now) {
+          await prisma.rateLimitEntry.upsert({
+            where: { key: compositeKey },
+            create: {
+              key: compositeKey,
+              count: 1,
+              expiresAt: new Date(now.getTime() + windowMs),
+            },
+            update: {
+              count: 1,
+              expiresAt: new Date(now.getTime() + windowMs),
+            },
+          })
+          return { allowed: true, remaining: limit - 1 }
+        }
+
+        // Window still active — check if over limit
+        if (entry.count >= limit) {
+          return { allowed: false, retryAfterMs: entry.expiresAt.getTime() - now.getTime() }
+        }
+
+        // Increment
+        await prisma.rateLimitEntry.update({
+          where: { key: compositeKey },
+          data: { count: { increment: 1 } },
+        })
+
+        return { allowed: true, remaining: limit - (entry.count + 1) }
+      } catch (err) {
+        // If DB is unreachable, fail open (allow the request) to avoid
+        // blocking all traffic when there's a transient DB issue.
+        console.error('Rate limiter DB error (failing open):', err)
+        return { allowed: true, remaining: limit }
       }
-
-      if (entry.count >= limit) {
-        return { allowed: false, retryAfterMs: entry.resetTime - now }
-      }
-
-      entry.count++
-      return { allowed: true, remaining: limit - entry.count }
     },
   }
 }

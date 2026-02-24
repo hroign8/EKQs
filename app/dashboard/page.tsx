@@ -23,7 +23,7 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
-import { useEvent } from '@/lib/hooks'
+import { useEvent, useCurrency } from '@/lib/hooks'
 import { formatDateShort } from '@/lib/utils'
 import { useDashboardData } from './hooks/useDashboardData'
 import TicketCard from '@/components/TicketCard'
@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview')
   const { loading, error, stats, votes, tickets, messages, account, fetchDashboard } = useDashboardData()
   const { data: eventData } = useEvent()
+  const { formatPrice } = useCurrency()
 
   useEffect(() => {
     if (!sessionPending && session?.user) {
@@ -81,7 +82,7 @@ export default function DashboardPage() {
     },
     {
       label: 'Total Spent',
-      value: `$${stats.totalSpent.toFixed(2)}`,
+      value: formatPrice(stats.totalSpent),
       icon: <DollarSign className="w-5 h-5" />,
       iconBg: 'bg-emerald-100 text-emerald-600',
       accent: 'from-emerald-500/10 to-transparent',
@@ -329,6 +330,7 @@ export default function DashboardPage() {
                             holderName={account?.name || 'Guest'}
                             eventName={eventData?.name}
                             eventDate={eventData ? formatDateShort(eventData.startDate) : undefined}
+                            formatPrice={formatPrice}
                           />
                         ))}
                       </div>
@@ -447,7 +449,7 @@ export default function DashboardPage() {
                           <p className="text-sm font-extrabold text-burgundy-900">
                             {v.votesCount} <span className="font-medium text-gray-500">vote{v.votesCount !== 1 ? 's' : ''}</span>
                           </p>
-                          <p className="text-xs text-gray-400 mt-0.5">${v.amountPaid.toFixed(2)}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{formatPrice(v.amountPaid)}</p>
                         </div>
                         <div className="flex-shrink-0">
                           {v.verified ? (
@@ -509,6 +511,7 @@ export default function DashboardPage() {
                         holderName={account?.name || 'Guest'}
                         eventName={eventData?.name}
                         eventDate={eventData ? formatDateShort(eventData.startDate) : undefined}
+                        formatPrice={formatPrice}
                       />
                     ))}
                   </div>

@@ -260,3 +260,14 @@ model Subscriber {
 
   @@map("subscriber")
 }
+
+model RateLimitEntry {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  /// Composite key: "limiterName:rateLimitKey" e.g. "votes:userId123"
+  key       String   @unique
+  count     Int      @default(1)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+  @@map("rate_limit")
+}

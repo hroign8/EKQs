@@ -11,8 +11,9 @@ const limiter = createRateLimiter('search', 30, 60_000) // 30 per minute
 export async function GET(request: NextRequest) {
   try {
     // Rate limit by IP
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const check = limiter.check(ip)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
     if (!check.allowed) {
       return NextResponse.json({ contestants: [], error: 'Too many requests' }, { status: 429 })
     }
