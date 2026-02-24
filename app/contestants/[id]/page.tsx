@@ -91,6 +91,7 @@ export default function ContestantDetailsPage() {
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 40vw"
                     priority
+                    loading="eager"
                   />
                   {contestant.rank && contestant.rank <= 3 && (
                     <div className={`absolute top-4 right-4 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white ${

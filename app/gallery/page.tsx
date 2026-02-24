@@ -72,7 +72,8 @@ export default function GalleryPage() {
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    priority={index === 0}
+                    priority
+                    loading="eager"
                   />
                 </div>
                 <div className="p-3 sm:p-4">

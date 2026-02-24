@@ -147,7 +147,8 @@ export default function Home() {
                         fill
                         className="object-cover"
                         sizes="128px"
-                        priority={index === 0}
+                        priority
+                        loading="eager"
                       />
                     </div>
                     <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${

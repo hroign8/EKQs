@@ -125,7 +125,8 @@ export default function VotePage() {
                         fill
                         className="rounded-full object-cover transition-transform group-hover:scale-105"
                         sizes="64px"
-                        priority={index === 0}
+                        priority
+                        loading="eager"
                       />
                       {index === 0 && (
                         <div className="absolute -top-1.5 sm:-top-2 -right-1.5 sm:-right-2 w-6 h-6 sm:w-7 sm:h-7 bg-gold-500 rounded-full flex items-center justify-center">
