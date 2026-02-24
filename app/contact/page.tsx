@@ -99,6 +99,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="text-xs font-medium text-gray-400 mb-0.5">Location</p>
+                      <p className="font-semibold text-burgundy-900">21a UK Mall, Kansanga</p>
                       <p className="font-semibold text-burgundy-900">Kampala, Uganda</p>
                     </div>
                   </div>
