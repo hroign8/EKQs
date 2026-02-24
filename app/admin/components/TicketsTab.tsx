@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Edit, Trash2, EyeOff, Eye, Ticket, Crown, Star, DollarSign, Users, TrendingUp, RefreshCw, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, EyeOff, Eye, Ticket, Crown, Star, DollarSign, Users, TrendingUp, RefreshCw, Clock, BadgeCheck, XCircle } from 'lucide-react'
 import type { AdminTicketType, TicketPurchaseEntry } from '../types'
 
 interface TicketsTabProps {
@@ -20,8 +20,8 @@ const TIER_ICONS: Record<string, { icon: React.ReactNode; bg: string; text: stri
   ticket: { icon: <Ticket className="w-4 h-4" />, bg: 'bg-sky-100', text: 'text-sky-600' },
 }
 
-const STATUS_BADGES: Record<string, { bg: string; text: string; Icon: typeof CheckCircle }> = {
-  confirmed: { bg: 'bg-green-50', text: 'text-green-700', Icon: CheckCircle },
+const STATUS_BADGES: Record<string, { bg: string; text: string; Icon: typeof BadgeCheck }> = {
+  confirmed: { bg: 'bg-green-50', text: 'text-green-700', Icon: BadgeCheck },
   pending: { bg: 'bg-yellow-50', text: 'text-yellow-700', Icon: Clock },
   failed: { bg: 'bg-red-50', text: 'text-red-700', Icon: XCircle },
 }
