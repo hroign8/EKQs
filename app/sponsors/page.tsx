@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import PageHero from '@/components/PageHero'
 import type { Metadata } from 'next'
 
@@ -30,11 +31,12 @@ export const metadata: Metadata = {
 interface SponsorItem {
   name: string
   description: string
-  icon: LucideIcon
+  icon?: LucideIcon
+  imageSrc?: string
 }
 
 const platinumSponsors: SponsorItem[] = [
-  { name: 'Asmara Holdings', description: 'Investment and real estate group supporting community development across East Africa.', icon: Building2 },
+  { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services. The app allows users to book rides, access food delivery, and utilize a wallet system, with features like FarasMiles cashback. It can be reached via toll-free number 0800 344 440 or through their website.', imageSrc: '/faras-logo.png' },
   { name: 'Red Sea Beverages', description: 'Premium beverage company celebrating Eritrean heritage through quality products.', icon: Wine },
 ]
 
@@ -66,8 +68,18 @@ function SponsorRow({ sponsor }: { sponsor: SponsorItem }) {
   const Icon = sponsor.icon
   return (
     <div className="flex items-start gap-4">
-      <div className="w-10 h-10 bg-burgundy-50 rounded-full flex items-center justify-center flex-shrink-0">
-        <Icon className="w-5 h-5 text-burgundy-900" />
+      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-burgundy-50">
+        {sponsor.imageSrc ? (
+          <Image
+            src={sponsor.imageSrc}
+            alt={sponsor.name}
+            width={40}
+            height={40}
+            className="w-10 h-10 object-cover rounded-full"
+          />
+        ) : Icon ? (
+          <Icon className="w-5 h-5 text-burgundy-900" />
+        ) : null}
       </div>
       <div className="min-w-0">
         <h3 className="font-semibold text-burgundy-900 text-sm">{sponsor.name}</h3>

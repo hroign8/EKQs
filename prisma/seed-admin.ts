@@ -9,20 +9,54 @@ import { hashPassword } from 'better-auth/crypto'
  *
  * Set these environment variables before running:
  *   ADMIN_EMAIL    – admin login email    (required)
- *   ADMIN_PASSWORD – admin login password (required)
+ *   ADMIN_PASSWORD – admin login password (required, min 12 chars with complexity)
  *   ADMIN_NAME     – display name         (default: Admin)
  *
  * Usage:
- *   ADMIN_EMAIL=me@example.com ADMIN_PASSWORD=Secret123! npm run db:seed-admin
+ *   ADMIN_EMAIL=me@example.com ADMIN_PASSWORD=Secret123!@# npm run db:seed-admin
  */
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin'
 
+// Password strength validation for admin accounts
+function validateAdminPassword(password: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = []
+  
+  if (password.length < 12) {
+    errors.push('Password must be at least 12 characters long')
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter')
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter')
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one number')
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    errors.push('Password must contain at least one special character')
+  }
+  
+  return { valid: errors.length === 0, errors }
+}
+
 if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
   console.error('❌ ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required.')
-  console.error('   Usage: ADMIN_EMAIL=me@example.com ADMIN_PASSWORD=Secret123! npm run db:seed-admin')
+  console.error('   Usage: ADMIN_EMAIL=me@example.com ADMIN_PASSWORD=Secret123!@# npm run db:seed-admin')
+  process.exit(1)
+}
+
+// Validate password strength
+const passwordValidation = validateAdminPassword(ADMIN_PASSWORD)
+if (!passwordValidation.valid) {
+  console.error('❌ Admin password does not meet security requirements:')
+  passwordValidation.errors.forEach(err => console.error(`   - ${err}`))
+  console.error('')
+  console.error('   Admin passwords must be at least 12 characters and include:')
+  console.error('   uppercase, lowercase, number, and special character.')
   process.exit(1)
 }
 

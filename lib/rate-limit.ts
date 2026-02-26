@@ -10,14 +10,35 @@
 
 import { prisma } from '@/lib/db'
 
+export interface RateLimiterOptions {
+  /** Window length in milliseconds (default 60_000 = 1 min) */
+  windowMs?: number
+  /**
+   * Whether to deny requests when the database is unreachable.
+   * - `true` (fail closed): Deny requests on DB error — safer for auth/sensitive endpoints.
+   * - `false` (fail open): Allow requests on DB error — better availability for non-critical endpoints.
+   * Default: `false`
+   */
+  failClosed?: boolean
+}
+
 /**
  * Create a rate limiter for a specific purpose.
  *
  * @param name    – unique identifier for this limiter (e.g. 'auth', 'contact')
  * @param limit   – max requests allowed per window
- * @param windowMs – window length in milliseconds (default 60 000 = 1 min)
+ * @param options – optional configuration (windowMs, failClosed)
  */
-export function createRateLimiter(name: string, limit: number, windowMs = 60_000) {
+export function createRateLimiter(
+  name: string,
+  limit: number,
+  options: RateLimiterOptions | number = {}
+) {
+  // Support legacy signature: createRateLimiter(name, limit, windowMs)
+  const opts: RateLimiterOptions =
+    typeof options === 'number' ? { windowMs: options } : options
+  const windowMs = opts.windowMs ?? 60_000
+  const failClosed = opts.failClosed ?? false
   return {
     /**
      * Check whether the key is within limits.
@@ -64,8 +85,13 @@ export function createRateLimiter(name: string, limit: number, windowMs = 60_000
 
         return { allowed: true, remaining: limit - (entry.count + 1) }
       } catch (err) {
-        // If DB is unreachable, fail open (allow the request) to avoid
-        // blocking all traffic when there's a transient DB issue.
+        // Handle DB errors based on failClosed setting
+        if (failClosed) {
+          // Fail closed: deny the request to protect sensitive endpoints
+          console.error('Rate limiter DB error (failing closed):', err)
+          return { allowed: false, retryAfterMs: 5000 }
+        }
+        // Fail open: allow the request to maintain availability
         console.error('Rate limiter DB error (failing open):', err)
         return { allowed: true, remaining: limit }
       }

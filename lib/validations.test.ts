@@ -7,16 +7,52 @@ import {
   ticketPurchaseSchema,
   categorySchema,
   packageSchema,
+  isValidObjectId,
+  objectIdSchema,
 } from './validations'
+
+// Valid MongoDB ObjectIds for testing
+const TEST_IDS = {
+  contestant: '507f1f77bcf86cd799439011',
+  category: '507f1f77bcf86cd799439012',
+  package: '507f1f77bcf86cd799439013',
+  ticket: '507f1f77bcf86cd799439014',
+}
+
+// ─── objectIdSchema ──────────────────────────────────────────
+
+describe('objectIdSchema', () => {
+  it('passes with valid 24-char hex string', () => {
+    expect(objectIdSchema.safeParse('507f1f77bcf86cd799439011').success).toBe(true)
+  })
+
+  it('fails with short string', () => {
+    expect(objectIdSchema.safeParse('abc123').success).toBe(false)
+  })
+
+  it('fails with non-hex characters', () => {
+    expect(objectIdSchema.safeParse('507f1f77bcf86cd79943901z').success).toBe(false)
+  })
+})
+
+describe('isValidObjectId', () => {
+  it('returns true for valid ObjectId', () => {
+    expect(isValidObjectId('507f1f77bcf86cd799439011')).toBe(true)
+  })
+
+  it('returns false for invalid ObjectId', () => {
+    expect(isValidObjectId('abc123')).toBe(false)
+  })
+})
 
 // ─── submitVoteSchema ────────────────────────────────────────
 
 describe('submitVoteSchema', () => {
   it('passes with valid input', () => {
     const result = submitVoteSchema.safeParse({
-      contestantId: 'abc123',
-      categoryId: 'cat1',
-      packageId: 'pkg1',
+      contestantId: TEST_IDS.contestant,
+      categoryId: TEST_IDS.category,
+      packageId: TEST_IDS.package,
     })
     expect(result.success).toBe(true)
   })
@@ -24,8 +60,17 @@ describe('submitVoteSchema', () => {
   it('fails when contestantId is empty', () => {
     const result = submitVoteSchema.safeParse({
       contestantId: '',
-      categoryId: 'cat1',
-      packageId: 'pkg1',
+      categoryId: TEST_IDS.category,
+      packageId: TEST_IDS.package,
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('fails when contestantId is invalid ObjectId format', () => {
+    const result = submitVoteSchema.safeParse({
+      contestantId: 'abc123',
+      categoryId: TEST_IDS.category,
+      packageId: TEST_IDS.package,
     })
     expect(result.success).toBe(false)
   })
@@ -159,15 +204,23 @@ describe('eventSchema', () => {
 describe('ticketPurchaseSchema', () => {
   it('passes with valid input', () => {
     const result = ticketPurchaseSchema.safeParse({
-      ticketTypeId: 'vip',
+      ticketTypeId: TEST_IDS.ticket,
       quantity: 2,
     })
     expect(result.success).toBe(true)
   })
 
-  it('fails with zero quantity', () => {
+  it('fails with invalid ObjectId format', () => {
     const result = ticketPurchaseSchema.safeParse({
       ticketTypeId: 'vip',
+      quantity: 2,
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('fails with zero quantity', () => {
+    const result = ticketPurchaseSchema.safeParse({
+      ticketTypeId: TEST_IDS.ticket,
       quantity: 0,
     })
     expect(result.success).toBe(false)
@@ -175,7 +228,7 @@ describe('ticketPurchaseSchema', () => {
 
   it('fails with quantity over 20', () => {
     const result = ticketPurchaseSchema.safeParse({
-      ticketTypeId: 'vip',
+      ticketTypeId: TEST_IDS.ticket,
       quantity: 21,
     })
     expect(result.success).toBe(false)
@@ -249,7 +302,7 @@ describe('packageSchema', () => {
 describe('updateContestantSchema', () => {
   it('passes with only id and partial fields', () => {
     const result = updateContestantSchema.safeParse({
-      id: 'abc123',
+      id: TEST_IDS.contestant,
       name: 'Updated Name',
     })
     expect(result.success).toBe(true)
@@ -257,7 +310,7 @@ describe('updateContestantSchema', () => {
 
   it('passes with all fields', () => {
     const result = updateContestantSchema.safeParse({
-      id: 'abc123',
+      id: TEST_IDS.contestant,
       name: 'John',
       country: 'Eritrea',
       gender: 'Male',
@@ -276,8 +329,16 @@ describe('updateContestantSchema', () => {
 
   it('fails with invalid gender', () => {
     const result = updateContestantSchema.safeParse({
-      id: 'abc123',
+      id: TEST_IDS.contestant,
       gender: 'Unknown',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('fails with invalid ObjectId format', () => {
+    const result = updateContestantSchema.safeParse({
+      id: 'abc123',
+      name: 'Updated Name',
     })
     expect(result.success).toBe(false)
   })

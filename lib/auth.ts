@@ -4,12 +4,14 @@ import { admin } from 'better-auth/plugins'
 import { prisma } from '@/lib/db'
 import { sendVerificationEmail, sendPasswordResetEmail } from '@/lib/email'
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 // Resolve the canonical base URL:
 // 1. BETTER_AUTH_URL (explicitly set, highest priority)
 // 2. NEXT_PUBLIC_APP_URL (set in Vercel env vars)
 // 3. VERCEL_PROJECT_PRODUCTION_URL (stable production domain, auto-injected by Vercel)
 // 4. VERCEL_URL (deployment-specific URL, auto-injected by Vercel)
-// 5. localhost fallback for local dev
+// 5. localhost fallback for local dev (NOT allowed in production)
 const resolvedBaseURL =
   process.env.BETTER_AUTH_URL ||
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -17,13 +19,24 @@ const resolvedBaseURL =
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : null) ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-  'http://localhost:3001'
+  (isProduction ? null : 'http://localhost:3001')
+
+// Fail fast in production if no valid URL is configured
+if (isProduction && !resolvedBaseURL) {
+  throw new Error(
+    'FATAL: No base URL configured for production. ' +
+    'Set BETTER_AUTH_URL, NEXT_PUBLIC_APP_URL, or deploy to Vercel.'
+  )
+}
+
+// After the check, resolvedBaseURL is guaranteed to be a string
+const baseURL = resolvedBaseURL as string
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
 
 export const auth = betterAuth({
-  baseURL: resolvedBaseURL,
+  baseURL,
   database: prismaAdapter(prisma, {
     provider: 'mongodb',
   }),
@@ -76,7 +89,7 @@ export const auth = betterAuth({
   ],
 
   trustedOrigins: [
-    resolvedBaseURL,
+    baseURL,
     'http://localhost:3001',
     'https://ek-qs.vercel.app',
     ...(process.env.VERCEL_PROJECT_PRODUCTION_URL

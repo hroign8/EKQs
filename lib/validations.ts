@@ -1,11 +1,23 @@
 import { z } from 'zod'
 
+// ─── MongoDB ObjectId Validation ─────────────────────────────
+// MongoDB ObjectIds are 24-character hex strings
+export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID format')
+
+/**
+ * Validate that a string is a valid MongoDB ObjectId.
+ * Returns true if valid, false otherwise.
+ */
+export function isValidObjectId(id: string): boolean {
+  return /^[a-f\d]{24}$/i.test(id)
+}
+
 // ─── Vote Validation ────────────────────────────────────────
 
 export const submitVoteSchema = z.object({
-  contestantId: z.string().min(1, 'Contestant is required'),
-  categoryId: z.string().min(1, 'Category is required'),
-  packageId: z.string().min(1, 'Package is required'),
+  contestantId: objectIdSchema,
+  categoryId: objectIdSchema,
+  packageId: objectIdSchema,
 })
 
 export type SubmitVoteInput = z.infer<typeof submitVoteSchema>
@@ -55,7 +67,7 @@ export type EventInput = z.infer<typeof eventSchema>
 // ─── Ticket Purchase Validation ──────────────────────────────
 
 export const ticketPurchaseSchema = z.object({
-  ticketTypeId: z.string().min(1, 'Ticket type is required'),
+  ticketTypeId: objectIdSchema,
   quantity: z.number().int().min(1).max(20),
 })
 
@@ -99,7 +111,7 @@ export type PackageInput = z.infer<typeof packageSchema>
 // ─── Contestant Update Validation (Admin PUT) ──────────────
 
 export const updateContestantSchema = contestantSchema.partial().extend({
-  id: z.string().min(1, 'Contestant ID is required'),
+  id: objectIdSchema,
 })
 
 export type UpdateContestantInput = z.infer<typeof updateContestantSchema>
@@ -108,9 +120,9 @@ export type UpdateContestantInput = z.infer<typeof updateContestantSchema>
 
 export const manualVoteSchema = z.object({
   voterEmail: z.string().email('Valid email is required'),
-  contestantId: z.string().min(1, 'Contestant is required'),
-  categoryId: z.string().min(1, 'Category is required'),
-  packageId: z.string().min(1, 'Package is required'),
+  contestantId: objectIdSchema,
+  categoryId: objectIdSchema,
+  packageId: objectIdSchema,
 })
 
 export type ManualVoteInput = z.infer<typeof manualVoteSchema>

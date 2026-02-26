@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/db'
+import { isValidObjectId } from '@/lib/validations'
 
 // GET /api/notifications - Get user's notifications
 export async function GET(request: NextRequest) {
@@ -58,6 +59,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (id) {
+      // Validate ObjectId format
+      if (!isValidObjectId(id)) {
+        return NextResponse.json({ error: 'Invalid notification ID' }, { status: 400 })
+      }
       await prisma.notification.update({
         where: { id, userId: session.user.id },
         data: { read: true },

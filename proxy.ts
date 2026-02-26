@@ -58,6 +58,9 @@ export async function proxy(request: NextRequest) {
     "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com",
     `connect-src 'self' https://ek-qs.vercel.app ${appUrl} https://accounts.google.com https://api.exchangerate-api.com https://*.pesapal.com`,
     "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
   ]
     .map((d) => d.trim())
     .join('; ')

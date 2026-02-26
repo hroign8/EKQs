@@ -24,6 +24,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ contestants: [] })
     }
 
+    // Prevent DoS via excessively long search queries
+    if (query.length > 100) {
+      return NextResponse.json({ contestants: [], error: 'Search query too long' }, { status: 400 })
+    }
+
     const contestants = await prisma.contestant.findMany({
       where: {
         isActive: true,

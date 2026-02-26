@@ -1,6 +1,12 @@
 import { GET } from '@/app/api/contestants/route'
 import { NextRequest } from 'next/server'
 
+// Valid MongoDB ObjectIds for testing
+const TEST_IDS = {
+  contestant1: '507f1f77bcf86cd799439011',
+  contestant2: '507f1f77bcf86cd799439012',
+}
+
 vi.mock('@/lib/db', () => ({
   prisma: {
     contestant: {
@@ -19,8 +25,8 @@ vi.mock('@/lib/db', () => ({
 import { prisma } from '@/lib/db'
 
 const mockContestants = [
-  { id: '1', name: 'Alice', country: 'Kenya', gender: 'Female', image: '/uploads/contestants/alice.jpg', description: 'A description', rank: 1, isActive: true, createdAt: new Date(), votes: {} },
-  { id: '2', name: 'Bob', country: 'Uganda', gender: 'Male', image: '/uploads/contestants/bob.jpg', description: 'Another description', rank: 2, isActive: true, createdAt: new Date(), votes: {} },
+  { id: TEST_IDS.contestant1, name: 'Alice', country: 'Kenya', gender: 'Female', image: '/uploads/contestants/alice.jpg', description: 'A description', rank: 1, isActive: true, createdAt: new Date(), votes: {} },
+  { id: TEST_IDS.contestant2, name: 'Bob', country: 'Uganda', gender: 'Male', image: '/uploads/contestants/bob.jpg', description: 'Another description', rank: 2, isActive: true, createdAt: new Date(), votes: {} },
 ]
 
 function makeRequest(search = ''): NextRequest {

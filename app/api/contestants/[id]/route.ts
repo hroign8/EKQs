@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { isValidObjectId } from '@/lib/validations'
 
 /**
  * GET /api/contestants/[id]
@@ -11,6 +12,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+
+    // Validate ObjectId format to prevent malformed query errors
+    if (!isValidObjectId(id)) {
+      return NextResponse.json({ error: 'Invalid contestant ID' }, { status: 400 })
+    }
 
     const contestant = await prisma.contestant.findUnique({
       where: { id },

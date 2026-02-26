@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getTransactionStatus } from '@/lib/pesapal'
 import { sendVoteConfirmationEmail } from '@/lib/email'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+// Rate limit IPN callbacks to prevent abuse (100 per minute per IP should be generous for legitimate use)
+const ipnLimiter = createRateLimiter('pesapal-ipn', 100, 60_000)
 
 /**
  * GET /api/pesapal/ipn
@@ -10,6 +14,14 @@ import { sendVoteConfirmationEmail } from '@/lib/email'
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limit by IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip') || 'unknown'
+    const rl = await ipnLimiter.check(ip)
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const orderTrackingId = searchParams.get('OrderTrackingId')
     const orderMerchantReference = searchParams.get('OrderMerchantReference')

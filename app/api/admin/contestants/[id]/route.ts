@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
-import { contestantSchema } from '@/lib/validations'
+import { contestantSchema, isValidObjectId } from '@/lib/validations'
 
 // Partial schema for updates — only provided fields are validated
 const updateFieldsSchema = contestantSchema.partial()
@@ -19,6 +19,12 @@ export async function PUT(
 
   try {
     const { id } = await params
+
+    // Validate ObjectId format
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid contestant ID format', 400)
+    }
+
     const body = await request.json()
 
     const existing = await prisma.contestant.findUnique({ where: { id } })
@@ -66,6 +72,11 @@ export async function DELETE(
 
   try {
     const { id } = await params
+
+    // Validate ObjectId format
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid contestant ID format', 400)
+    }
 
     const existing = await prisma.contestant.findUnique({ where: { id } })
     if (!existing) {
