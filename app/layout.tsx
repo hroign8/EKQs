@@ -5,6 +5,7 @@ import './globals.css'
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
 import { ToastProvider } from '@/components/Toast'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const plusJakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -93,6 +94,7 @@ export default async function RootLayout({
           </div>
           <Footer />
         </ToastProvider>
+        <SpeedInsights />
       </body>
     </html>
   )
