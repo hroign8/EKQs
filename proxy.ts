@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com",
-    `connect-src 'self' https://ek-qs.vercel.app ${appUrl} https://accounts.google.com https://api.exchangerate-api.com https://*.pesapal.com`,
+    `connect-src 'self' https://ek-qs.vercel.app https://eritreanqueens.com https://www.eritreanqueens.com ${appUrl} https://accounts.google.com https://api.exchangerate-api.com https://*.pesapal.com`,
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
