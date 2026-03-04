@@ -104,7 +104,7 @@ describe('useApiData', () => {
       json: async () => mockData,
     } as Response)
 
-    const { result } = renderHook(() => useApiData('/api/test', null))
+    const { result } = renderHook(() => useApiData<{ id: string; name: string } | null>('/api/test', null))
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
