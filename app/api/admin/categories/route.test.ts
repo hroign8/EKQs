@@ -111,7 +111,7 @@ describe('PUT /api/admin/categories', () => {
 
   it('returns 404 for non-existent category', async () => {
     vi.mocked(prisma.votingCategory.findUnique).mockResolvedValue(null)
-    const res = await PUT(jsonRequest('PUT', { id: 'doesnotexist123456789012', name: 'Nope' }))
+    const res = await PUT(jsonRequest('PUT', { id: 'aaaaaaaaaaaaaaaaaaaaaaaa', name: 'Nope' }))
     expect(res.status).toBe(404)
   })
 })
@@ -136,7 +136,7 @@ describe('DELETE /api/admin/categories', () => {
 
   it('returns 404 for non-existent category', async () => {
     vi.mocked(prisma.votingCategory.findUnique).mockResolvedValue(null)
-    const res = await DELETE(jsonRequest('DELETE', undefined, { id: 'doesnotexist123456789012' }))
+    const res = await DELETE(jsonRequest('DELETE', undefined, { id: 'aaaaaaaaaaaaaaaaaaaaaaaa' }))
     expect(res.status).toBe(404)
   })
 })

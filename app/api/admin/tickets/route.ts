@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
 import { getTransactionStatus } from '@/lib/pesapal'
-import { ticketTypeSchema } from '@/lib/validations'
+import { ticketTypeSchema, isValidObjectId } from '@/lib/validations'
 
 /**
  * GET /api/admin/tickets
@@ -103,6 +103,9 @@ export async function PUT(request: Request) {
     if (!id || typeof id !== 'string') {
       return errorResponse('Ticket type ID is required')
     }
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid ticket type ID format', 400)
+    }
 
     const existing = await prisma.ticketType.findUnique({ where: { id } })
     if (!existing) {
@@ -158,6 +161,9 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return errorResponse('Ticket type ID is required')
+    }
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid ticket type ID format', 400)
     }
 
     const existing = await prisma.ticketType.findUnique({

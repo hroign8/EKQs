@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getTransactionStatus } from '@/lib/pesapal'
 import { prisma } from '@/lib/db'
 import { sendVoteConfirmationEmail } from '@/lib/email'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const callbackLimiter = createRateLimiter('pesapal-callback', 30, 60_000)
 
 /**
  * GET /api/pesapal/callback
@@ -11,6 +14,13 @@ import { sendVoteConfirmationEmail } from '@/lib/email'
  */
 export async function GET(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip') || 'anonymous'
+    const rl = await callbackLimiter.check(ip)
+    if (!rl.allowed) {
+      return NextResponse.redirect(new URL('/vote?payment=error', request.url))
+    }
+
     const searchParams = request.nextUrl.searchParams
     const orderTrackingId = searchParams.get('OrderTrackingId')
 

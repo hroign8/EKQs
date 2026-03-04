@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/api-utils'
-import { manualVoteSchema } from '@/lib/validations'
+import { manualVoteSchema, isValidObjectId } from '@/lib/validations'
 import { getTransactionStatus } from '@/lib/pesapal'
 
 /**
@@ -21,8 +21,14 @@ export async function GET(request: NextRequest) {
     const verified = searchParams.get('verified')
 
     const where: Record<string, unknown> = {}
-    if (contestantId) where.contestantId = contestantId
-    if (categoryId) where.categoryId = categoryId
+    if (contestantId) {
+      if (!isValidObjectId(contestantId)) return NextResponse.json({ error: 'Invalid contestant ID' }, { status: 400 })
+      where.contestantId = contestantId
+    }
+    if (categoryId) {
+      if (!isValidObjectId(categoryId)) return NextResponse.json({ error: 'Invalid category ID' }, { status: 400 })
+      where.categoryId = categoryId
+    }
     if (verified !== null && verified !== undefined && verified !== '') {
       where.verified = verified === 'true'
     }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
+import { isValidObjectId } from '@/lib/validations'
 
 /**
  * GET /api/admin/users
@@ -48,7 +49,14 @@ export async function PATCH(request: Request) {
 
   try {
     const { id, banned, banReason } = await request.json()
-    if (!id) return errorResponse('User ID is required')
+    if (!id || typeof id !== 'string') return errorResponse('User ID is required')
+    if (!isValidObjectId(id)) return errorResponse('Invalid user ID format', 400)
+
+    // Prevent admin from banning themselves
+    const { session } = await requireAdmin()
+    if (session!.user.id === id && banned) {
+      return errorResponse('You cannot ban your own account', 400)
+    }
 
     const user = await prisma.user.update({
       where: { id },
