@@ -3,8 +3,6 @@ import {
   Heart,
   Globe,
   Megaphone,
-  Mail,
-  Building2,
   Wine,
   Plane,
   Shirt,

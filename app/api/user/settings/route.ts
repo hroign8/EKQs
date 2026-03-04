@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { z } from 'zod/v4'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('user-settings', 30, 60_000)
 
 const VALID_CURRENCIES = [
   'USD', 'EUR', 'GBP', 'UGX', 'KES', 'ETB', 'ERN', 'NGN', 'GHS',
@@ -19,8 +22,14 @@ const updateSettingsSchema = z.object({
  * Returns { preferredCurrency: null } for unauthenticated users so the
  * useCurrency() hook (called on all public pages) doesn't generate 401 noise.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session?.user) {
       // Return empty settings rather than 401 — this endpoint is called by the
@@ -45,6 +54,12 @@ export async function PUT(request: NextRequest) {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
     }
 
     const body = await request.json()

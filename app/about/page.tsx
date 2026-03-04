@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Crown, Heart, Award, Camera, Clock, Star, Users, Mic, Music, Utensils } from 'lucide-react'
+import { Crown, Heart, Award, Camera, Users, Mic, Music, Utensils } from 'lucide-react'
 import Link from 'next/link'
 import PageHero from '@/components/PageHero'
 
@@ -210,7 +210,7 @@ export default function AboutPage() {
                   <Heart className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-burgundy-900 mb-1">People's Choice Award</h3>
+                  <h3 className="font-bold text-burgundy-900 mb-1">People&apos;s Choice Award</h3>
                   <p className="text-gray-600 text-sm">Voted by our community members, recognizing the contestant who has captured the hearts of the people.</p>
                 </div>
               </div>
@@ -270,7 +270,7 @@ export default function AboutPage() {
           <div className="bg-white rounded-2xl p-5 sm:p-8">
             <h2 className="text-2xl font-bold text-burgundy-900 mb-4">Why Your Vote Matters</h2>
             <p className="text-gray-600 mb-6">
-              Your vote is more than just a choice—it's a celebration of the values and achievements you admire.
+              Your vote is more than just a choice—it&apos;s a celebration of the values and achievements you admire.
             </p>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="flex items-center gap-3 bg-burgundy-50 rounded-xl p-4">

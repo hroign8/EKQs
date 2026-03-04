@@ -136,6 +136,7 @@ export default function UsersTab({ usersList, onBanUser, onExportUsers }: UsersT
                   <td className="px-4 sm:px-6 py-3">
                     <div className="flex items-center gap-3">
                       {user.image ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-burgundy-100 flex items-center justify-center flex-shrink-0">

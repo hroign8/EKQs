@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
-import { Heart, ChevronLeft, Crown, Award, Camera, Star } from 'lucide-react'
+import { Heart, ChevronLeft, Crown, Award, Camera } from 'lucide-react'
 import Link from 'next/link'
 import VotingModal from '@/components/VotingModal'
 import type { Contestant } from '@/types'

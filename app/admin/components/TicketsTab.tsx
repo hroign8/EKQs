@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Edit, Trash2, EyeOff, Eye, Ticket, Crown, Star, DollarSign, Users, TrendingUp, RefreshCw, Clock, BadgeCheck, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, EyeOff, Eye, Ticket, Crown, Star, DollarSign, Users, RefreshCw, Clock, BadgeCheck, XCircle } from 'lucide-react'
 import type { AdminTicketType, TicketPurchaseEntry } from '../types'
 
 interface TicketsTabProps {

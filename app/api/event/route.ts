@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('event', 60, 60_000)
 
 // Force dynamic so Vercel never statically caches a 404 from build time.
 export const dynamic = 'force-dynamic'
@@ -8,8 +11,14 @@ export const dynamic = 'force-dynamic'
  * GET /api/event
  * Public endpoint — returns the active event data.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     // Find the most recent event regardless of isActive — the old toggle
     // logic could have set isActive:false, so we can't filter by it here.
     const event = await prisma.event.findFirst({

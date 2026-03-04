@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('contestants', 60, 60_000)
 
 // Cache at the Next.js route layer: revalidate every 60 s.
 // Combined with the Cache-Control header below this means Vercel's Edge Network
@@ -18,6 +21,12 @@ export async function GET(request: Request) {
   const skip = (page - 1) * limit
 
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const [contestants, total] = await Promise.all([
       prisma.contestant.findMany({
         where: { isActive: true },

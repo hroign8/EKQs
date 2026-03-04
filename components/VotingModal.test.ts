@@ -1,5 +1,5 @@
 import { modalReducer, initialModalState } from './VotingModal'
-import type { ModalState, ModalAction } from './VotingModal'
+import type { ModalState } from './VotingModal'
 import type { VotingPackage, VotingCategory } from '@/types'
 
 const pkg: VotingPackage = { id: 'p1', name: 'Basic', votes: 5, price: 2 }

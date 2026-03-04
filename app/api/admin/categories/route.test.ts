@@ -27,8 +27,6 @@ vi.mock('@/lib/api-utils', () => ({
 import { GET, POST, PUT, DELETE } from './route'
 import { prisma } from '@/lib/db'
 
-const prismaMock = vi.mocked(prisma)
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function jsonRequest(method: string, body?: unknown, params?: Record<string, string>) {
   const url = new URL('http://localhost:3001/api/admin/categories')
@@ -54,7 +52,7 @@ describe('GET /api/admin/categories', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns all categories', async () => {
-    prismaMock.votingCategory.findMany.mockResolvedValue([sampleCategory])
+    vi.mocked(prisma.votingCategory.findMany).mockResolvedValue([sampleCategory] as never)
     const res = await GET()
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -63,7 +61,7 @@ describe('GET /api/admin/categories', () => {
   })
 
   it('returns 500 on database error', async () => {
-    prismaMock.votingCategory.findMany.mockRejectedValue(new Error('DB'))
+    vi.mocked(prisma.votingCategory.findMany).mockRejectedValue(new Error('DB'))
     const res = await GET()
     expect(res.status).toBe(500)
   })
@@ -73,15 +71,15 @@ describe('POST /api/admin/categories', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('creates a category with auto-generated slug', async () => {
-    prismaMock.votingCategory.findUnique.mockResolvedValue(null)
-    prismaMock.votingCategory.create.mockResolvedValue(sampleCategory)
+    vi.mocked(prisma.votingCategory.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.votingCategory.create).mockResolvedValue(sampleCategory as never)
 
     const res = await POST(jsonRequest('POST', { name: 'Best Talent' }))
     expect(res.status).toBe(201)
   })
 
   it('rejects duplicate slug', async () => {
-    prismaMock.votingCategory.findUnique.mockResolvedValue(sampleCategory)
+    vi.mocked(prisma.votingCategory.findUnique).mockResolvedValue(sampleCategory as never)
 
     const res = await POST(jsonRequest('POST', { name: 'Best Talent' }))
     expect(res.status).toBe(400)
@@ -99,8 +97,8 @@ describe('PUT /api/admin/categories', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('updates category name', async () => {
-    prismaMock.votingCategory.findUnique.mockResolvedValue(sampleCategory)
-    prismaMock.votingCategory.update.mockResolvedValue({ ...sampleCategory, name: 'Updated' })
+    vi.mocked(prisma.votingCategory.findUnique).mockResolvedValue(sampleCategory as never)
+    vi.mocked(prisma.votingCategory.update).mockResolvedValue({ ...sampleCategory, name: 'Updated' } as never)
 
     const res = await PUT(jsonRequest('PUT', { id: sampleCategory.id, name: 'Updated' }))
     expect(res.status).toBe(200)
@@ -112,7 +110,7 @@ describe('PUT /api/admin/categories', () => {
   })
 
   it('returns 404 for non-existent category', async () => {
-    prismaMock.votingCategory.findUnique.mockResolvedValue(null)
+    vi.mocked(prisma.votingCategory.findUnique).mockResolvedValue(null)
     const res = await PUT(jsonRequest('PUT', { id: 'doesnotexist123456789012', name: 'Nope' }))
     expect(res.status).toBe(404)
   })
@@ -122,8 +120,8 @@ describe('DELETE /api/admin/categories', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('deletes a category', async () => {
-    prismaMock.votingCategory.findUnique.mockResolvedValue(sampleCategory)
-    prismaMock.votingCategory.delete.mockResolvedValue(sampleCategory)
+    vi.mocked(prisma.votingCategory.findUnique).mockResolvedValue(sampleCategory as never)
+    vi.mocked(prisma.votingCategory.delete).mockResolvedValue(sampleCategory as never)
 
     const res = await DELETE(jsonRequest('DELETE', undefined, { id: sampleCategory.id }))
     expect(res.status).toBe(200)
@@ -137,7 +135,7 @@ describe('DELETE /api/admin/categories', () => {
   })
 
   it('returns 404 for non-existent category', async () => {
-    prismaMock.votingCategory.findUnique.mockResolvedValue(null)
+    vi.mocked(prisma.votingCategory.findUnique).mockResolvedValue(null)
     const res = await DELETE(jsonRequest('DELETE', undefined, { id: 'doesnotexist123456789012' }))
     expect(res.status).toBe(404)
   })

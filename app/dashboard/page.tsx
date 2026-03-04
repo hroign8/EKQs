@@ -18,7 +18,6 @@ import {
   CalendarDays,
   ArrowUpRight,
   Trophy,
-  ShieldCheck,
   TrendingUp,
   MessageCircle,
 } from 'lucide-react'

@@ -11,7 +11,7 @@ export async function GET() {
   const { error } = await requireAdmin()
   if (error) return error
 
-  const apiUrl = process.env.PESAPAL_API_URL || '(not set)'
+  const _apiUrl = process.env.PESAPAL_API_URL || '(not set)'
   const hasKey = !!process.env.PESAPAL_CONSUMER_KEY
   const hasSecret = !!process.env.PESAPAL_CONSUMER_SECRET
   const ipnUrl = process.env.PESAPAL_IPN_URL || '(not set)'
@@ -36,7 +36,7 @@ export async function GET() {
   try {
     await getPesapalToken()
     results.authToken = { success: true }
-  } catch (err) {
+  } catch {
     results.authToken = { success: false, error: 'Authentication failed — check consumer key/secret.' }
     return NextResponse.json(results)
   }

@@ -1,16 +1,25 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { isValidObjectId } from '@/lib/validations'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('contestant-detail', 60, 60_000)
 
 /**
  * GET /api/contestants/[id]
  * Public endpoint — returns a single contestant with vote counts.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const { id } = await params
 
     // Validate ObjectId format to prevent malformed query errors

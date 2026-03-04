@@ -25,8 +25,6 @@ vi.mock('@/lib/api-utils', () => ({
 import { POST } from './route'
 import { prisma } from '@/lib/db'
 
-const prismaMock = vi.mocked(prisma)
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function makeRequest(body: unknown) {
   return new Request('http://localhost:3001/api/contact', {
@@ -48,7 +46,7 @@ describe('POST /api/contact', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns 200 on valid submission', async () => {
-    prismaMock.contactMessage.create.mockResolvedValue({ id: '1' })
+    vi.mocked(prisma.contactMessage.create).mockResolvedValue({ id: '1' } as never)
     const res = await POST(makeRequest(validPayload))
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -56,9 +54,9 @@ describe('POST /api/contact', () => {
   })
 
   it('calls prisma.contactMessage.create with correct data', async () => {
-    prismaMock.contactMessage.create.mockResolvedValue({ id: '1' })
+    vi.mocked(prisma.contactMessage.create).mockResolvedValue({ id: '1' } as never)
     await POST(makeRequest(validPayload))
-    expect(prismaMock.contactMessage.create).toHaveBeenCalledWith({
+    expect(vi.mocked(prisma.contactMessage.create)).toHaveBeenCalledWith({
       data: expect.objectContaining({
         name: 'Jane Doe',
         email: 'jane@example.com',
@@ -84,14 +82,14 @@ describe('POST /api/contact', () => {
   })
 
   it('allows subject to be omitted', async () => {
-    prismaMock.contactMessage.create.mockResolvedValue({ id: '1' })
+    vi.mocked(prisma.contactMessage.create).mockResolvedValue({ id: '1' } as never)
     const { subject: _, ...noSubject } = validPayload
     const res = await POST(makeRequest(noSubject))
     expect(res.status).toBe(200)
   })
 
   it('returns 500 on database error', async () => {
-    prismaMock.contactMessage.create.mockRejectedValue(new Error('DB down'))
+    vi.mocked(prisma.contactMessage.create).mockRejectedValue(new Error('DB down'))
     const res = await POST(makeRequest(validPayload))
     expect(res.status).toBe(500)
   })

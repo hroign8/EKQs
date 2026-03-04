@@ -190,7 +190,7 @@ export function useAdminData() {
     } finally {
       setDataLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => {
     if (!sessionPending && session?.user && isAdmin(session.user)) {
@@ -225,7 +225,7 @@ export function useAdminData() {
       setUploadProgress(100)
     }
     reader.readAsDataURL(file)
-  }, [])
+  }, [toast])
 
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -359,7 +359,7 @@ export function useAdminData() {
       }
       handleCloseModal()
     } catch { toast.error('An error occurred while saving') }
-  }, [formData, editingContestant, handleCloseModal])
+  }, [formData, editingContestant, handleCloseModal, toast])
 
   // ── Category handlers ───────────────────────────────────
   const handleAddCategory = useCallback(() => {
@@ -429,7 +429,7 @@ export function useAdminData() {
       setShowModal(false)
       setModalType('contestant')
     } catch { toast.error('An error occurred while saving') }
-  }, [categoryFormData, editingCategory])
+  }, [categoryFormData, editingCategory, toast])
 
   // ── Vote handlers ───────────────────────────────────────
   const handleAddManualVote = useCallback(() => {
@@ -465,7 +465,7 @@ export function useAdminData() {
         toast.error(data.error || 'Failed to record vote')
       }
     } catch { toast.error('An error occurred while saving the vote') }
-  }, [voteFormData, voteFormPackageId, fetchAdminData])
+  }, [voteFormData, voteFormPackageId, fetchAdminData, toast])
 
   // ── Event handlers ──────────────────────────────────────
   const handleEditEvent = useCallback(() => {
@@ -537,7 +537,7 @@ export function useAdminData() {
         setPackagesList(prev => prev.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p))
       }
     } catch { toast.error('Failed to toggle package') }
-  }, [packagesList])
+  }, [packagesList, toast])
 
   const handleSavePackage = useCallback(async () => {
     if (!packageFormData.name || !packageFormData.votes || !packageFormData.price) {
@@ -585,7 +585,7 @@ export function useAdminData() {
       }
       handleCloseModal()
     } catch { toast.error('An error occurred while saving') }
-  }, [packageFormData, editingPackage, handleCloseModal])
+  }, [packageFormData, editingPackage, handleCloseModal, toast])
 
   // ── Ticket type handlers ────────────────────────────────
   const handleAddTicket = useCallback(() => {
@@ -636,7 +636,7 @@ export function useAdminData() {
         setTicketTypesList(prev => prev.map(t => t.id === id ? { ...t, isActive: !t.isActive } : t))
       }
     } catch { toast.error('Failed to toggle ticket type') }
-  }, [ticketTypesList])
+  }, [ticketTypesList, toast])
 
   const handleSaveTicket = useCallback(async () => {
     if (!ticketFormData.name || !ticketFormData.price) {
@@ -701,7 +701,7 @@ export function useAdminData() {
       }
       handleCloseModal()
     } catch { toast.error('An error occurred while saving') }
-  }, [ticketFormData, editingTicket, handleCloseModal])
+  }, [ticketFormData, editingTicket, handleCloseModal, toast])
 
   const handleVerifyPendingTickets = useCallback(async () => {
     try {

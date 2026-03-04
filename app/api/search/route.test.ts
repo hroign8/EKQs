@@ -21,8 +21,6 @@ vi.mock('@/lib/rate-limit', () => ({
 import { GET } from './route'
 import { prisma } from '@/lib/db'
 
-const prismaMock = vi.mocked(prisma)
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function makeRequest(query: string) {
   const url = new URL('http://localhost:3001/api/search')
@@ -59,7 +57,7 @@ describe('GET /api/search', () => {
   })
 
   it('returns matching contestants for a valid query', async () => {
-    prismaMock.contestant.findMany.mockResolvedValue(sampleResults)
+    vi.mocked(prisma.contestant.findMany).mockResolvedValue(sampleResults as never)
     const res = await GET(makeRequest('Abi'))
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -68,9 +66,9 @@ describe('GET /api/search', () => {
   })
 
   it('queries Prisma with case-insensitive contains', async () => {
-    prismaMock.contestant.findMany.mockResolvedValue([])
+    vi.mocked(prisma.contestant.findMany).mockResolvedValue([])
     await GET(makeRequest('test'))
-    expect(prismaMock.contestant.findMany).toHaveBeenCalledWith(
+    expect(vi.mocked(prisma.contestant.findMany)).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           isActive: true,
@@ -82,15 +80,15 @@ describe('GET /api/search', () => {
   })
 
   it('limits results to 5', async () => {
-    prismaMock.contestant.findMany.mockResolvedValue([])
+    vi.mocked(prisma.contestant.findMany).mockResolvedValue([])
     await GET(makeRequest('test'))
-    expect(prismaMock.contestant.findMany).toHaveBeenCalledWith(
+    expect(vi.mocked(prisma.contestant.findMany)).toHaveBeenCalledWith(
       expect.objectContaining({ take: 5 }),
     )
   })
 
   it('returns 500 on database error', async () => {
-    prismaMock.contestant.findMany.mockRejectedValue(new Error('DB failure'))
+    vi.mocked(prisma.contestant.findMany).mockRejectedValue(new Error('DB failure'))
     const res = await GET(makeRequest('test'))
     expect(res.status).toBe(500)
   })

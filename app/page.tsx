@@ -1,39 +1,15 @@
 'use client'
 
-import { useState } from 'react'
 import Image from 'next/image'
-import dynamic from 'next/dynamic'
 import { useContestants, useEvent } from '@/lib/hooks'
 import { Crown, Calendar, MapPin, Users, Star } from 'lucide-react'
 import CountdownTimer from '@/components/CountdownTimer'
 import Link from 'next/link'
-import type { Contestant } from '@/types'
-import LoadingSpinner from '@/components/LoadingSpinner'
 import { formatDate, genderTitle } from '@/lib/utils'
-
-// Lazy load the voting modal since it's not needed on initial render
-const VotingModal = dynamic(() => import('@/components/VotingModal'), {
-  loading: () => <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><LoadingSpinner /></div>,
-  ssr: false,
-})
 
 export default function Home() {
   const { data: contestants, loading: contestantsLoading } = useContestants()
-  const { data: eventData, loading: eventLoading } = useEvent()
-  const [showVotingModal, setShowVotingModal] = useState(false)
-  const [selectedContestant, setSelectedContestant] = useState<Contestant | null>(null)
-  const [votedContestants, setVotedContestants] = useState<Set<string>>(new Set())
-
-  const handleVoteClick = (contestant: Contestant) => {
-    setSelectedContestant(contestant)
-    setShowVotingModal(true)
-  }
-
-  const handleVoteSuccess = () => {
-    if (selectedContestant) {
-      setVotedContestants(prev => new Set(prev).add(selectedContestant.id))
-    }
-  }
+  const { data: eventData } = useEvent()
 
   const topContestants = [...contestants].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0)).slice(0, 3)
 
@@ -199,7 +175,7 @@ export default function Home() {
               <span className="text-lg font-bold text-white">2</span>
             </div>
             <h3 className="font-bold text-burgundy-900 mb-2">Select Category</h3>
-            <p className="text-gray-600 text-sm">Pick from People's Choice, Best Talent, Best Evening Wear & more</p>
+            <p className="text-gray-600 text-sm">Pick from People&apos;s Choice, Best Talent, Best Evening Wear &amp; more</p>
           </div>
           <div className="bg-white rounded-2xl p-6 text-center hover:shadow-md transition-shadow">
             <div className="w-12 h-12 bg-gold-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -230,14 +206,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {showVotingModal && selectedContestant && (
-        <VotingModal
-          contestant={selectedContestant}
-          onClose={() => setShowVotingModal(false)}
-          onSuccess={handleVoteSuccess}
-        />
-      )}
     </main>
   )
 }

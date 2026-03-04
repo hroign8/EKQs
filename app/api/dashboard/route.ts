@@ -1,15 +1,24 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/api-utils'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('dashboard', 30, 60_000)
 
 /**
  * GET /api/dashboard
  * Authenticated endpoint — returns the current user's activity data.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { session, error } = await requireAuth()
     if (error) return error
+
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
 
     const userId = session!.user.id
 

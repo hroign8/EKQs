@@ -1,18 +1,12 @@
 'use client'
 
-import { QrCode, Smartphone, ScanLine, CheckCircle, Download, Copy } from 'lucide-react'
+import { Smartphone, ScanLine, CheckCircle, Copy } from 'lucide-react'
 import PageHero from '@/components/PageHero'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 export default function QRCodePage() {
   const [copied, setCopied] = useState(false)
-  const [votingUrl, setVotingUrl] = useState('https://eritreankingsqueens.com')
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setVotingUrl(window.location.origin)
-    }
-  }, [])
+  const votingUrl = typeof window !== 'undefined' ? window.location.origin : 'https://eritreankingsqueens.com'
 
   const handleCopy = async () => {
     try {
@@ -229,7 +223,7 @@ export default function QRCodePage() {
                 <Smartphone className="w-6 h-6 text-gold-500" />
               </div>
               <h3 className="font-bold text-burgundy-900 mb-2 text-lg">1. Scan</h3>
-              <p className="text-sm text-gray-600">Open your phone's camera and point it at the QR code</p>
+              <p className="text-sm text-gray-600">Open your phone&apos;s camera and point it at the QR code</p>
             </div>
             <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 text-center">
               <div className="w-12 h-12 bg-gold-100 rounded-full flex items-center justify-center mx-auto mb-4">

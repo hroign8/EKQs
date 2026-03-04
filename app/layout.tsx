@@ -82,7 +82,7 @@ export default async function RootLayout({
   // Read the nonce injected by middleware so Next.js stamps it on its own
   // inline bootstrap scripts. Any custom <Script> components should also
   // receive this nonce prop.
-  const nonce = (await headers()).get('x-nonce') ?? undefined
+  const _nonce = (await headers()).get('x-nonce') ?? undefined
 
   return (
     <html lang="en" suppressHydrationWarning>
