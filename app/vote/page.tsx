@@ -18,14 +18,21 @@ export default function VotePage() {
   const [showVotingModal, setShowVotingModal] = useState(false)
   const [selectedContestant, setSelectedContestant] = useState<Contestant | null>(null)
 
-  const activeCategorySlug = selectedCategory || (categories.length > 0 ? (categories[0].slug ?? 'peoplesChoice') : 'peoplesChoice')
+  const activeCategorySlug = selectedCategory || 'all'
 
   const handleVoteClick = (contestant: Contestant) => {
     setSelectedContestant(contestant)
     setShowVotingModal(true)
   }
 
+  const getTotalVotes = (contestant: Contestant) => {
+    const votes = contestant.votes as Record<string, number> | undefined
+    if (!votes) return 0
+    return Object.values(votes).reduce((sum, v) => sum + (v || 0), 0)
+  }
+
   const getVoteCount = (contestant: Contestant) => {
+    if (activeCategorySlug === 'all') return getTotalVotes(contestant)
     return contestant.votes?.[activeCategorySlug] ?? 0
   }
 
@@ -69,6 +76,19 @@ export default function VotePage() {
         {/* Category Tabs */}
         <div role="tablist" aria-label="Vote categories" className="overflow-x-auto scroll-container -mx-4 px-4 sm:mx-0 sm:px-0 mb-8 sm:mb-10">
           <div className="flex justify-start sm:justify-center gap-2 sm:gap-3 min-w-max sm:min-w-0 sm:flex-wrap">
+            <button
+              id="vote-tab-all"
+              role="tab"
+              aria-selected={activeCategorySlug === 'all'}
+              onClick={() => setSelectedCategory('all')}
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap text-sm sm:text-base ${
+                activeCategorySlug === 'all'
+                  ? 'bg-burgundy-900 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-burgundy-900'
+              }`}
+            >
+              All
+            </button>
             {categories.map((category) => (
               <button
                 key={category.slug}

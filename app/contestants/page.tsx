@@ -36,8 +36,19 @@ export default function ContestantsPage() {
   const [showVotingModal, setShowVotingModal] = useState(false)
   const [selectedContestant, setSelectedContestant] = useState<Contestant | null>(null)
 
-  // Set default category once loaded
-  const activeCategorySlug = selectedCategory || (categories.length > 0 ? categories[0].slug : 'peoplesChoice')
+  // Set default category once loaded — 'all' shows total performance
+  const activeCategorySlug = selectedCategory || 'all'
+
+  const getTotalVotes = (contestant: Contestant) => {
+    const votes = contestant.votes as Record<string, number> | undefined
+    if (!votes) return 0
+    return Object.values(votes).reduce((sum, v) => sum + (v || 0), 0)
+  }
+
+  const getDisplayVotes = (contestant: Contestant) => {
+    if (activeCategorySlug === 'all') return getTotalVotes(contestant)
+    return (contestant.votes as Record<string, number>)?.[activeCategorySlug] ?? 0
+  }
 
   const handleVoteClick = (contestant: Contestant) => {
     setSelectedContestant(contestant)
@@ -51,9 +62,7 @@ export default function ContestantsPage() {
   })
 
   const sortedContestants = [...filteredContestants].sort((a, b) => {
-    const aVotes = (a.votes as Record<string, number>)[activeCategorySlug] || 0
-    const bVotes = (b.votes as Record<string, number>)[activeCategorySlug] || 0
-    return bVotes - aVotes
+    return getDisplayVotes(b) - getDisplayVotes(a)
   })
 
   const kingsCount = contestants.filter(c => c.gender === 'Male').length
@@ -108,6 +117,16 @@ export default function ContestantsPage() {
           {/* Category Tabs */}
           <div className="w-full sm:w-auto overflow-x-auto scroll-container -mx-4 px-4 sm:mx-0 sm:px-0">
             <div className="flex gap-2 min-w-max">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                  activeCategorySlug === 'all'
+                    ? 'bg-gold-500 text-burgundy-900'
+                    : 'bg-white text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                All
+              </button>
               {categories.map((category) => (
                 <button
                   key={category.slug}
@@ -175,7 +194,7 @@ export default function ContestantsPage() {
                     <h3 className="text-sm sm:text-xl font-bold text-white mb-0.5 sm:mb-1 truncate">{contestant.name}</h3>
                     <div className="flex items-center gap-1 sm:gap-1.5 text-white/90">
                       <Heart className="w-3 h-3 sm:w-4 sm:h-4 fill-white/90" />
-                      <span className="text-xs sm:text-sm font-medium">{(contestant.votes?.[activeCategorySlug] ?? 0).toLocaleString()} votes</span>
+                      <span className="text-xs sm:text-sm font-medium">{getDisplayVotes(contestant).toLocaleString()} votes</span>
                     </div>
                   </div>
                 </div>
