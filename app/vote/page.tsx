@@ -12,7 +12,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import type { Contestant, VotingCategory } from '@/types'
 
 export default function VotePage() {
-  const { data: contestants, loading: contestantsLoading } = useContestants()
+  const { data: contestants, loading: contestantsLoading, refetch: refetchContestants } = useContestants()
   const { data: categories, loading: categoriesLoading } = useApiData<VotingCategory[]>('/api/categories', [])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [showVotingModal, setShowVotingModal] = useState(false)
@@ -211,6 +211,7 @@ export default function VotePage() {
             setShowVotingModal(false)
             setSelectedContestant(null)
           }}
+          onSuccess={() => refetchContestants()}
         />
       )}
 

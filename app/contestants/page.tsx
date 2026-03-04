@@ -29,7 +29,7 @@ const filters = [
 ] as const
 
 export default function ContestantsPage() {
-  const { data: contestants, loading: contestantsLoading } = useContestants()
+  const { data: contestants, loading: contestantsLoading, refetch: refetchContestants } = useContestants()
   const { data: categories, loading: categoriesLoading } = useApiData<Category[]>('/api/categories', [])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'kings' | 'queens'>('all')
@@ -211,6 +211,7 @@ export default function ContestantsPage() {
             setShowVotingModal(false)
             setSelectedContestant(null)
           }}
+          onSuccess={() => refetchContestants()}
         />
       )}
 

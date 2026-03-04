@@ -129,10 +129,24 @@ export function useApiData<T>(url: string, fallback: T) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setData(json)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch')
+    } finally {
+      setLoading(false)
+    }
+  }, [url])
+
   useEffect(() => {
     let cancelled = false
 
-    const fetchData = async () => {
+    const load = async () => {
       try {
         const res = await fetch(url)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -150,11 +164,11 @@ export function useApiData<T>(url: string, fallback: T) {
       }
     }
 
-    fetchData()
+    load()
     return () => { cancelled = true }
   }, [url])
 
-  return { data, loading, error, setData }
+  return { data, loading, error, setData, refetch: fetchData }
 }
 
 /**
