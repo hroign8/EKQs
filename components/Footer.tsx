@@ -66,7 +66,7 @@ export default function Footer() {
               Celebrating excellence, heritage, and beauty. Join us in crowning the next generation of leaders.
             </p>
             <div className="flex space-x-4">
-              <a href="#" rel="noopener noreferrer" aria-label="Instagram" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
+              <a href="https://www.instagram.com/eritrean_kings_and_queens_?igsh=bG1kdjV0Y2Vxejc1" rel="noopener noreferrer" aria-label="Instagram" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
               <a href="#" rel="noopener noreferrer" aria-label="Facebook" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">

@@ -36,7 +36,7 @@ interface SponsorItem {
 }
 
 const platinumSponsors: SponsorItem[] = [
-  { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services. The app allows users to book rides, access food delivery, and utilize a wallet system, with features like FarasMiles cashback. It can be reached via toll-free number 0800 344 440 or through their website.', imageSrc: '/faras-logo.png' },
+  { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services.', imageSrc: '/faras_logo_gray-01.svg'},
   { name: 'Red Sea Beverages', description: 'Premium beverage company celebrating Eritrean heritage through quality products.', icon: Wine },
 ]
 
@@ -47,6 +47,8 @@ const goldSponsors: SponsorItem[] = [
 ]
 
 const silverSponsors: SponsorItem[] = [
+    { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services. The app allows users to book rides, access food delivery, and utilize a wallet system, with features like FarasMiles cashback. It can be reached via toll-free number 0800 344 440 or through their website.', imageSrc: '/faras_logo_gray-01.svg'},
+
   { name: 'Adulis Media', description: 'Amplifying Eritrean stories worldwide.', icon: Tv },
   { name: 'Nakfa Financial', description: 'Seamless remittance and banking for the diaspora.', icon: Landmark },
   { name: 'Sembel Catering', description: 'Traditional and fusion Eritrean cuisine.', icon: UtensilsCrossed },
@@ -54,7 +56,7 @@ const silverSponsors: SponsorItem[] = [
 ]
 
 const partners = [
-  { name: 'Eritrean Community Association', type: 'Community', icon: Heart },
+  { name: 'East Africa International Medical Center', type: 'Healthcare', icon: Heart },
   { name: 'UNESCO Cultural Heritage Fund', type: 'Cultural', icon: Globe },
   { name: 'East African Youth Foundation', type: 'Youth', icon: GraduationCap },
   { name: 'Kampala Convention Bureau', type: 'Venue', icon: MapPin },
