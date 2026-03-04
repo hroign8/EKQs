@@ -15,12 +15,17 @@ const updateSettingsSchema = z.object({
   preferredCurrency: z.enum(VALID_CURRENCIES as [string, ...string[]]).nullable(),
 })
 
-/** GET /api/user/settings — returns the current user's settings */
+/** GET /api/user/settings — returns the current user's settings.
+ * Returns { preferredCurrency: null } for unauthenticated users so the
+ * useCurrency() hook (called on all public pages) doesn't generate 401 noise.
+ */
 export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      // Return empty settings rather than 401 — this endpoint is called by the
+      // useCurrency hook on all pages, including public ones.
+      return NextResponse.json({ preferredCurrency: null })
     }
 
     const user = await prisma.user.findUnique({
