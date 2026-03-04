@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
         })
       }
     }
-    // Handle failed/reversed/cancelled ticket payments (status_code 2=failed, 3=reversed, 4=cancelled)
+    // Handle failed/reversed/cancelled payments (status_code 2=failed, 3=reversed, 4=cancelled)
     else if (status.status_code >= 2) {
       const transaction = await prisma.pesapalTransaction.findUnique({
         where: { orderTrackingId },
@@ -126,6 +126,11 @@ export async function GET(request: NextRequest) {
         await prisma.ticketPurchase.updateMany({
           where: { transactionId: orderTrackingId, status: 'pending' },
           data: { status: 'failed' },
+        })
+      } else if (transaction?.transactionType === 'vote') {
+        // Remove unverified vote records for failed/cancelled payments
+        await prisma.vote.deleteMany({
+          where: { transactionId: orderTrackingId, verified: false },
         })
       }
     }

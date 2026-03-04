@@ -22,6 +22,19 @@ export async function GET(request: Request) {
 
     const userId = session!.user.id
 
+    // ── Auto-expire stale pending records (older than 1 hour) ──────────────
+    // This prevents abandoned payment attempts from showing as "pending" forever.
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+    await Promise.all([
+      prisma.vote.deleteMany({
+        where: { userId, verified: false, createdAt: { lt: oneHourAgo } },
+      }),
+      prisma.ticketPurchase.updateMany({
+        where: { userId, status: 'pending', createdAt: { lt: oneHourAgo } },
+        data: { status: 'expired' },
+      }),
+    ])
+
     const [votes, tickets, messages, account] = await Promise.all([
       prisma.vote.findMany({
         where: { userId },
