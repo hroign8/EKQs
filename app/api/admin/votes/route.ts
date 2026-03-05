@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     ])
 
     return NextResponse.json({
-      votes: votes.map((v: { id: string; createdAt: Date; user: { email: string; name: string | null }; contestant: { name: string }; category: { name: string }; package: { name: string }; votesCount: number; amountPaid: number; verified: boolean }) => ({
+      votes: votes.map((v: { id: string; createdAt: Date; user: { email: string; name: string | null }; contestant: { name: string }; category: { name: string }; package: { name: string }; votesCount: number; amountPaid: number; verified: boolean; country?: string | null }) => ({
         id: v.id,
         time: v.createdAt.toISOString(),
         voterEmail: v.user.email,
