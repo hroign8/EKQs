@@ -163,18 +163,18 @@ export default function VoteLogTab({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1050px]">
+        <table className="w-full min-w-[1200px]">
           <thead>
             <tr className="bg-burgundy-50">
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Time</th>
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Voter</th>
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Location</th>
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Contestant</th>
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Category</th>
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Package</th>
-              <th className="text-right px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Votes</th>
-              <th className="text-right px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Amount</th>
-              <th className="text-center px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Status</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Time</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Voter</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Location</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Contestant</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Category</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Package</th>
+              <th className="text-right px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Votes</th>
+              <th className="text-right px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Amount</th>
+              <th className="text-center px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider min-w-[110px]">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -194,11 +194,11 @@ export default function VoteLogTab({
                   index !== filtered.length - 1 ? 'border-b border-gray-100' : ''
                 }`}
               >
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{vote.time.split(',')[0]?.trim()}</div>
                   <div className="text-xs text-gray-500">{vote.time.split(',')[1]?.trim()}</div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-burgundy-100 rounded-full flex items-center justify-center">
                       <span className="text-xs font-bold text-burgundy-700">
@@ -213,7 +213,7 @@ export default function VoteLogTab({
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-4 whitespace-nowrap">
                   {vote.country ? (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xl leading-none" aria-hidden="true">{flagEmoji(vote.country)}</span>
@@ -223,24 +223,24 @@ export default function VoteLogTab({
                     <span className="text-xs text-gray-300">—</span>
                   )}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4">
                   <span className="text-sm font-semibold text-burgundy-900">{vote.contestant}</span>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4">
                   <span className="text-sm text-gray-600">{vote.category}</span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-4 whitespace-nowrap">
                   <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${packageBadgeStyle(vote.packageName)}`}>
                     {vote.packageName || 'N/A'}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right whitespace-nowrap">
+                <td className="px-4 py-4 text-right whitespace-nowrap">
                   <span className="text-sm font-black text-burgundy-900">{vote.votesCount || 1}</span>
                 </td>
-                <td className="px-6 py-4 text-right whitespace-nowrap">
+                <td className="px-4 py-4 text-right whitespace-nowrap">
                   <span className="text-sm font-bold text-emerald-600">${(vote.amountPaid || 0).toFixed(2)}</span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-4 whitespace-nowrap min-w-[110px]">
                   <div className="flex justify-center">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
                       vote.verified
