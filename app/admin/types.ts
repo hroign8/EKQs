@@ -26,6 +26,7 @@ export type VoteLogEntry = {
   packageName: string
   votesCount: number
   amountPaid: number
+  country?: string
 }
 
 export type AdminTab = 'overview' | 'contestants' | 'results' | 'votelog' | 'settings' | 'packages' | 'revenue' | 'users' | 'tickets'

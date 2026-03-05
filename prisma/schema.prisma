@@ -137,6 +137,7 @@ model Vote {
   votesCount    Int      @default(1)
   amountPaid    Float    @default(0)
   transactionId String?
+  country       String?
   verified      Boolean  @default(false)
   createdAt     DateTime @default(now())
 

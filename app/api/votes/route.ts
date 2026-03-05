@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAuth, errorResponse } from '@/lib/api-utils'
 import { submitVoteSchema } from '@/lib/validations'
@@ -13,7 +13,7 @@ const limiter = createRateLimiter('votes', 20, 60_000) // 20 per minute
  * Authenticated endpoint — initiates a vote purchase.
  * Creates a pending vote record and returns a PesaPal payment URL.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { session, error } = await requireAuth()
     if (error) return error
@@ -23,6 +23,9 @@ export async function POST(request: Request) {
     if (!check.allowed) {
       return errorResponse('Too many vote attempts. Please wait a moment.')
     }
+
+    // Capture voter's country from Vercel's automatic geo header
+    const country = request.headers.get('x-vercel-ip-country') || undefined
 
     const body = await request.json()
     const parsed = submitVoteSchema.safeParse(body)
@@ -137,6 +140,7 @@ export async function POST(request: Request) {
           votesCount: pkg.votes,
           amountPaid: pkg.price,
           transactionId: order.order_tracking_id,
+          country,
           verified: false,
         },
       }),

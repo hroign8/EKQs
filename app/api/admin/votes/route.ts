@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         votesCount: v.votesCount,
         amountPaid: v.amountPaid,
         verified: v.verified,
+        country: v.country ?? undefined,
       })),
       total,
       page,

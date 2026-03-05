@@ -30,7 +30,8 @@ export default function VoteLogTab({
         v.voterEmail.toLowerCase().includes(q) ||
         (v.voterName || '').toLowerCase().includes(q) ||
         v.contestant.toLowerCase().includes(q) ||
-        v.category.toLowerCase().includes(q)
+        v.category.toLowerCase().includes(q) ||
+        (v.country || '').toLowerCase().includes(q)
       )
     }
     return true
@@ -149,6 +150,7 @@ export default function VoteLogTab({
             <tr className="bg-burgundy-50">
               <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Time</th>
               <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Voter</th>
+              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Location</th>
               <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Contestant</th>
               <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Category</th>
               <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Package</th>
@@ -160,7 +162,7 @@ export default function VoteLogTab({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center">
+                <td colSpan={9} className="px-6 py-12 text-center">
                   <Crown className="w-10 h-10 text-gray-200 mx-auto mb-2" />
                   <p className="text-gray-400 font-medium">
                     {search ? 'No matching votes found' : filter === 'pending' ? 'No pending payments' : filter === 'verified' ? 'No verified payments' : 'No votes recorded yet'}
@@ -192,6 +194,18 @@ export default function VoteLogTab({
                       <div className="text-xs text-gray-500 truncate">{vote.voterEmail}</div>
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-4">
+                  {vote.country ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-lg leading-none">
+                        {vote.country.toUpperCase().replace(/./g, c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65))}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-500">{vote.country}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-300">—</span>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm font-semibold text-burgundy-900">{vote.contestant}</span>
