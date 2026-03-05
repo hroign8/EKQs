@@ -31,6 +31,7 @@ interface SponsorItem {
   description: string
   icon?: LucideIcon
   imageSrc?: string
+  imageClassName?: string
 }
 
 const platinumSponsors: SponsorItem[] = [
@@ -39,7 +40,7 @@ const platinumSponsors: SponsorItem[] = [
 ]
 
 const goldSponsors: SponsorItem[] = [
-  { name: 'Habesha Airlines', description: 'Connecting the Eritrean diaspora with affordable flights and cultural exchange.', icon: Plane },
+  { name: 'GrandHub Cafe and Halls', description: 'GoldenHub is a vibrant destination in Kabalagala Kampala, dedicated to great meals and exceptional cakes for every occasion. Blending warm café experiences with versatile event halls, GrandHub hosts celebrations, corporate gatherings, and memorable events of all sizes in a modern, welcoming setting.', imageSrc: '/grandhub_logo.svg', imageClassName: 'scale-150'}, 
   { name: 'Massawa Fashion House', description: 'Luxury fashion blending traditional Eritrean textiles with modern design.', icon: Shirt },
   { name: 'Keren Tech Solutions', description: 'Empowering African businesses through innovative digital solutions.', icon: Monitor },
 ]
@@ -75,7 +76,7 @@ function SponsorRow({ sponsor }: { sponsor: SponsorItem }) {
             alt={sponsor.name}
             width={40}
             height={40}
-            className="w-10 h-10 object-cover rounded-full"
+            className={`w-10 h-10 object-cover rounded-full ${sponsor.imageClassName ?? ''}`}
           />
         ) : Icon ? (
           <Icon className="w-5 h-5 text-burgundy-900" />
@@ -114,7 +115,7 @@ export default function SponsorsPage() {
             {/* Gold */}
             <div className="mb-10">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">Gold</p>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid sm:grid-cols-2 gap-8">
                 {goldSponsors.map((s) => <SponsorRow key={s.name} sponsor={s} />)}
               </div>
             </div>
