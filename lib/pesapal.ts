@@ -243,5 +243,8 @@ export async function getTransactionStatus(orderTrackingId: string): Promise<Pes
 
   const data: PesapalTransactionStatus = await response.json()
 
+  // Normalize status_code to a number — PesaPal occasionally returns it as a string
+  data.status_code = Number(data.status_code)
+
   return data
 }

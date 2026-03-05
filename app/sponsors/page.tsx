@@ -1,6 +1,5 @@
 import {
   Crown,
-  Heart,
   Globe,
   Megaphone,
   Wine,
@@ -53,8 +52,16 @@ const silverSponsors: SponsorItem[] = [
   { name: 'Dahlak Events', description: 'Professional event management in Kampala.', icon: PartyPopper },
 ]
 
-const partners = [
-  { name: 'East Africa International Medical Center', type: 'Healthcare', icon: Heart },
+interface PartnerItem {
+  name: string
+  type: string
+  icon?: LucideIcon
+  imageSrc?: string
+  imageClassName?: string
+}
+
+const partners: PartnerItem[] = [
+  { name: 'East Africa International Medical Center', type: 'Healthcare', imageSrc: '/east_africa_logo.svg' },
   { name: 'UNESCO Cultural Heritage Fund', type: 'Cultural', icon: Globe },
   { name: 'East African Youth Foundation', type: 'Youth', icon: GraduationCap },
   { name: 'Kampala Convention Bureau', type: 'Venue', icon: MapPin },
@@ -68,7 +75,7 @@ function SponsorRow({ sponsor }: { sponsor: SponsorItem }) {
   const Icon = sponsor.icon
   return (
     <div className="flex items-start gap-4">
-      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-burgundy-50">
+      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border-2 border-burgundy-900">
         {sponsor.imageSrc ? (
           <Image
             src={sponsor.imageSrc}
@@ -138,8 +145,18 @@ export default function SponsorsPage() {
                 const Icon = partner.icon
                 return (
                   <div key={partner.name} className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-gold-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-4 h-4 text-white" />
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border-2 border-burgundy-900">
+                      {partner.imageSrc ? (
+                        <Image
+                          src={partner.imageSrc}
+                          alt={partner.name}
+                          width={36}
+                          height={36}
+                          className={`w-9 h-9 object-cover rounded-full ${partner.imageClassName ?? ''}`}
+                        />
+                      ) : Icon ? (
+                        <Icon className="w-4 h-4 text-burgundy-900" />
+                      ) : null}
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-burgundy-900 text-sm leading-tight">{partner.name}</p>
