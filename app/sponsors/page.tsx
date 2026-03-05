@@ -4,7 +4,6 @@ import {
   Globe,
   Megaphone,
   Wine,
-  Plane,
   Shirt,
   Monitor,
   Landmark,
