@@ -4,6 +4,24 @@ import { useState } from 'react'
 import { Plus, Download, Crown, Search, RefreshCw } from 'lucide-react'
 import type { VoteLogEntry } from '../types'
 
+function packageBadgeStyle(name: string): string {
+  const n = (name || '').toUpperCase()
+  if (n.includes('PLATINUM')) return 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+  if (n.includes('GOLD')) return 'bg-amber-100 text-amber-700 border border-amber-200'
+  if (n.includes('SILVER')) return 'bg-slate-100 text-slate-600 border border-slate-200'
+  if (n.includes('BRONZE')) return 'bg-orange-100 text-orange-700 border border-orange-200'
+  if (n.includes('STARTER') || n.includes('FREE') || n.includes('BASIC')) return 'bg-green-100 text-green-700 border border-green-200'
+  return 'bg-purple-100 text-purple-700 border border-purple-200'
+}
+
+function flagEmoji(countryCode: string): string {
+  return countryCode
+    .toUpperCase()
+    .split('')
+    .map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65))
+    .join('')
+}
+
 interface VoteLogTabProps {
   voteLogList: VoteLogEntry[]
   onAddManualVote: () => void
@@ -145,7 +163,7 @@ export default function VoteLogTab({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[1050px]">
           <thead>
             <tr className="bg-burgundy-50">
               <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Time</th>
@@ -176,9 +194,9 @@ export default function VoteLogTab({
                   index !== filtered.length - 1 ? 'border-b border-gray-100' : ''
                 }`}
               >
-                <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">{vote.time.split(',')[0]}</div>
-                  <div className="text-xs text-gray-500">{vote.time.split(',')[1]}</div>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{vote.time.split(',')[0]?.trim()}</div>
+                  <div className="text-xs text-gray-500">{vote.time.split(',')[1]?.trim()}</div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
@@ -195,13 +213,11 @@ export default function VoteLogTab({
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 whitespace-nowrap">
                   {vote.country ? (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-lg leading-none">
-                        {vote.country.toUpperCase().replace(/./g, c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65))}
-                      </span>
-                      <span className="text-xs font-semibold text-gray-500">{vote.country}</span>
+                      <span className="text-xl leading-none" aria-hidden="true">{flagEmoji(vote.country)}</span>
+                      <span className="text-xs font-semibold text-gray-600 tracking-wide">{vote.country.toUpperCase()}</span>
                     </div>
                   ) : (
                     <span className="text-xs text-gray-300">—</span>
@@ -213,18 +229,18 @@ export default function VoteLogTab({
                 <td className="px-6 py-4">
                   <span className="text-sm text-gray-600">{vote.category}</span>
                 </td>
-                <td className="px-6 py-4">
-                  <span className="text-xs font-bold px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${packageBadgeStyle(vote.packageName)}`}>
                     {vote.packageName || 'N/A'}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-6 py-4 text-right whitespace-nowrap">
                   <span className="text-sm font-black text-burgundy-900">{vote.votesCount || 1}</span>
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-6 py-4 text-right whitespace-nowrap">
                   <span className="text-sm font-bold text-emerald-600">${(vote.amountPaid || 0).toFixed(2)}</span>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex justify-center">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
                       vote.verified
