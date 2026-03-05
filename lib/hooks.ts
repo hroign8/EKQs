@@ -187,6 +187,37 @@ export function useContestants() {
 }
 
 /**
+ * Top contestant returned by /api/contestants/top.
+ */
+export interface TopContestant {
+  id: string
+  name: string
+  country: string
+  gender: string
+  image: string
+  totalVotes: number
+  position: number
+}
+
+/**
+ * Fetch the top contestants ranked by real-time verified vote totals.
+ * Re-fetches every 30 s so the homepage stays fresh.
+ */
+export function useTopContestants(limit = 3) {
+  const { data, loading, error, refetch } = useApiData<TopContestant[]>(
+    `/api/contestants/top?limit=${limit}`,
+    [],
+  )
+
+  useEffect(() => {
+    const interval = setInterval(refetch, 30_000)
+    return () => clearInterval(interval)
+  }, [refetch])
+
+  return { data, loading, error, refetch }
+}
+
+/**
  * Fetch event data from the API.
  */
 export function useEvent() {

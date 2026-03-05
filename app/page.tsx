@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useContestants, useEvent } from '@/lib/hooks'
+import { useContestants, useTopContestants, useEvent } from '@/lib/hooks'
 import { Crown, Calendar, MapPin, Users, Star } from 'lucide-react'
 import CountdownTimer from '@/components/CountdownTimer'
 import Link from 'next/link'
@@ -9,9 +9,8 @@ import { formatDate, genderTitle } from '@/lib/utils'
 
 export default function Home() {
   const { data: contestants, loading: contestantsLoading } = useContestants()
+  const { data: topContestants, loading: topLoading } = useTopContestants(3)
   const { data: eventData } = useEvent()
-
-  const topContestants = [...contestants].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0)).slice(0, 3)
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -98,7 +97,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto">
-            {contestantsLoading
+            {topLoading
               ? Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="bg-white rounded-2xl p-6 flex flex-col items-center animate-pulse">
                     <div className="w-32 h-32 rounded-full bg-gray-200 mb-4" />
@@ -130,13 +129,14 @@ export default function Home() {
                     <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
                       index === 0 ? 'bg-gold-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-600'
                     }`}>
-                      {index + 1}
+                      {contestant.position}
                     </div>
                   </div>
                   <h3 className="font-bold text-lg text-burgundy-900 group-hover:text-gold-600 transition-colors">
                     {contestant.name}
                   </h3>
                   <p className="text-sm text-gray-600">{genderTitle(contestant.gender)} Contestant</p>
+                  <p className="text-xs text-gold-600 font-semibold mt-1">{contestant.totalVotes.toLocaleString()} votes</p>
                 </div>
               </Link>
             ))}
