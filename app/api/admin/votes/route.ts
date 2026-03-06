@@ -199,42 +199,57 @@ export async function PATCH() {
     let verifiedCount = 0
     let removedCount = 0
     const errors: string[] = []
+    const startTime = Date.now()
+    const TIME_BUDGET_MS = 50_000 // stop before 60s function timeout
+    const BATCH_SIZE = 5
 
-    for (const orderTrackingId of uniqueTransactionIds) {
-      try {
-        const status = await getTransactionStatus(orderTrackingId)
+    for (let i = 0; i < uniqueTransactionIds.length; i += BATCH_SIZE) {
+      if (Date.now() - startTime > TIME_BUDGET_MS) {
+        errors.push(`Time limit reached — checked ${i} of ${uniqueTransactionIds.length} transactions`)
+        break
+      }
 
-        // Update the PesaPal transaction record
-        await prisma.pesapalTransaction.updateMany({
-          where: { orderTrackingId },
-          data: {
-            status: status.payment_status_description,
-            statusCode: String(status.status_code),
-            paymentMethod: status.payment_method || undefined,
-            pesapalTransactionId: status.confirmation_code || undefined,
-          },
+      const batch = uniqueTransactionIds.slice(i, i + BATCH_SIZE)
+      const results = await Promise.allSettled(
+        batch.map(async (orderTrackingId) => {
+          const status = await getTransactionStatus(orderTrackingId)
+
+          await prisma.pesapalTransaction.updateMany({
+            where: { orderTrackingId },
+            data: {
+              status: status.payment_status_description,
+              statusCode: String(status.status_code),
+              paymentMethod: status.payment_method || undefined,
+              pesapalTransactionId: status.confirmation_code || undefined,
+            },
+          })
+
+          if (status.status_code === 1) {
+            const result = await prisma.vote.updateMany({
+              where: { transactionId: orderTrackingId, verified: false },
+              data: { verified: true },
+            })
+            return { verified: result.count, removed: 0 }
+          } else if (status.status_code >= 2) {
+            const result = await prisma.vote.deleteMany({
+              where: { transactionId: orderTrackingId, verified: false },
+            })
+            return { verified: 0, removed: result.count }
+          }
+          return { verified: 0, removed: 0 }
         })
+      )
 
-        // status_code 1 = completed
-        if (status.status_code === 1) {
-          const result = await prisma.vote.updateMany({
-            where: { transactionId: orderTrackingId, verified: false },
-            data: { verified: true },
-          })
-          verifiedCount += result.count
+      for (let j = 0; j < results.length; j++) {
+        const r = results[j]
+        if (r.status === 'fulfilled') {
+          verifiedCount += r.value.verified
+          removedCount += r.value.removed
+        } else {
+          const msg = r.reason instanceof Error ? r.reason.message : String(r.reason)
+          console.error(`Failed to check transaction ${batch[j]}:`, msg)
+          errors.push(`${batch[j]}: ${msg}`)
         }
-        // status_code 2 = failed, 3 = reversed, 4 = cancelled/invalid
-        // Remove vote records for failed/cancelled payments — they never counted
-        else if (status.status_code >= 2) {
-          const result = await prisma.vote.deleteMany({
-            where: { transactionId: orderTrackingId, verified: false },
-          })
-          removedCount += result.count
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        console.error(`Failed to check transaction ${orderTrackingId}:`, msg)
-        errors.push(`${orderTrackingId}: ${msg}`)
       }
     }
 
