@@ -322,6 +322,10 @@ export default function AdminPage() {
         {activeTab === 'votelog' && (
           <VoteLogTab
             voteLogList={admin.voteLogList}
+            voteLogPage={admin.voteLogPage}
+            voteLogTotalPages={admin.voteLogTotalPages}
+            voteLogTotal={admin.voteLogTotal}
+            onPageChange={admin.fetchVoteLogPage}
             onAddManualVote={admin.handleAddManualVote}
             onExportVoteLog={admin.handleExportVoteLog}
             onVerifyPending={admin.handleVerifyPending}

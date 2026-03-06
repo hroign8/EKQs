@@ -41,51 +41,66 @@ export async function GET(request: NextRequest) {
       select: { statusCode: true, transactionType: true },
     })
 
-    // Only update if not already in a terminal state
-    if (existingTx && !['1', '2', '3', '4'].includes(existingTx.statusCode || '')) {
-      await prisma.pesapalTransaction.update({
-        where: { orderTrackingId },
-        data: {
-          status: status.payment_status_description,
-          statusCode: String(status.status_code),
-          paymentMethod: status.payment_method || undefined,
-          pesapalTransactionId: status.confirmation_code || undefined,
-        },
-      })
+    // Terminal states: 1=completed, 2=failed, 3=reversed. We intentionally exclude
+    // 4 (cancelled/pending) so a later successful payment can still be reconciled.
+    const isAlreadyTerminal = existingTx && ['1', '2', '3'].includes(existingTx.statusCode || '')
+
+    if (!isAlreadyTerminal) {
+      // Update transaction record if it exists; skip if not (vote was created without a
+      // matching tx record — DB inconsistency — but we still want to verify the vote).
+      if (existingTx) {
+        await prisma.pesapalTransaction.update({
+          where: { orderTrackingId },
+          data: {
+            status: status.payment_status_description,
+            statusCode: String(status.status_code),
+            paymentMethod: status.payment_method || undefined,
+            pesapalTransactionId: status.confirmation_code || undefined,
+          },
+        })
+      }
 
       if (status.status_code === 1) {
-        // Payment succeeded
-        if (existingTx.transactionType === 'vote') {
+        // Payment succeeded — determine type from transaction record or from whichever
+        // related record exists (votes take priority in ambiguous cases).
+        const txType = existingTx?.transactionType
+        if (!txType || txType === 'vote') {
           const votes = await prisma.vote.findMany({
             where: { transactionId: orderTrackingId, verified: false },
             include: { contestant: true, category: true, user: true },
           })
-          await prisma.vote.updateMany({
-            where: { transactionId: orderTrackingId },
-            data: { verified: true },
-          })
-          for (const vote of votes) {
-            void sendVoteConfirmationEmail(
-              vote.user.email,
-              vote.contestant.name,
-              vote.category.name,
-              vote.votesCount,
-              vote.amountPaid
-            )
+          if (votes.length > 0) {
+            await prisma.vote.updateMany({
+              where: { transactionId: orderTrackingId },
+              data: { verified: true },
+            })
+            for (const vote of votes) {
+              void sendVoteConfirmationEmail(
+                vote.user.email,
+                vote.contestant.name,
+                vote.category.name,
+                vote.votesCount,
+                vote.amountPaid
+              )
+            }
           }
-        } else if (existingTx.transactionType === 'ticket') {
+        }
+        if (!txType || txType === 'ticket') {
           await prisma.ticketPurchase.updateMany({
-            where: { transactionId: orderTrackingId },
+            where: { transactionId: orderTrackingId, status: 'pending' },
             data: { status: 'confirmed' },
           })
         }
-      } else if (status.status_code >= 2) {
-        // Payment failed / reversed / cancelled
-        if (existingTx.transactionType === 'vote') {
+      } else if (status.status_code === 2 || status.status_code === 3) {
+        // Only remove/fail on explicit failure (2) or reversal (3) — not on 4 (pending/cancelled)
+        // to avoid destroying a vote that may still complete.
+        const txType = existingTx?.transactionType
+        if (!txType || txType === 'vote') {
           await prisma.vote.deleteMany({
             where: { transactionId: orderTrackingId, verified: false },
           })
-        } else if (existingTx.transactionType === 'ticket') {
+        }
+        if (!txType || txType === 'ticket') {
           await prisma.ticketPurchase.updateMany({
             where: { transactionId: orderTrackingId, status: 'pending' },
             data: { status: 'failed' },

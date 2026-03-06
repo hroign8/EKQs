@@ -24,6 +24,10 @@ function flagEmoji(countryCode: string): string {
 
 interface VoteLogTabProps {
   voteLogList: VoteLogEntry[]
+  voteLogPage: number
+  voteLogTotalPages: number
+  voteLogTotal: number
+  onPageChange: (page: number) => void
   onAddManualVote: () => void
   onExportVoteLog: () => void
   onVerifyPending: () => Promise<void>
@@ -31,6 +35,10 @@ interface VoteLogTabProps {
 
 export default function VoteLogTab({
   voteLogList,
+  voteLogPage,
+  voteLogTotalPages,
+  voteLogTotal,
+  onPageChange,
   onAddManualVote,
   onExportVoteLog,
   onVerifyPending,
@@ -262,12 +270,23 @@ export default function VoteLogTab({
       <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="text-xs sm:text-sm text-gray-500">
           Showing <span className="font-semibold text-burgundy-900">{filtered.length}</span>{filtered.length !== voteLogList.length && ` of ${voteLogList.length}`} entries
+          {voteLogTotalPages > 1 && (
+            <span className="ml-1">(page {voteLogPage} of {voteLogTotalPages}, {voteLogTotal} total)</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <button className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50" disabled>
+          <button
+            onClick={() => onPageChange(voteLogPage - 1)}
+            disabled={voteLogPage <= 1}
+            className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Previous
           </button>
-          <button className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50" disabled>
+          <button
+            onClick={() => onPageChange(voteLogPage + 1)}
+            disabled={voteLogPage >= voteLogTotalPages}
+            className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Next
           </button>
         </div>

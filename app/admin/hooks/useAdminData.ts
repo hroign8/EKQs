@@ -41,6 +41,9 @@ export function useAdminData() {
   const [categoriesList, setCategoriesList] = useState<Category[]>([])
   const [packagesList, setPackagesList] = useState<VotingPackage[]>([])
   const [voteLogList, setVoteLogList] = useState<VoteLogEntry[]>([])
+  const [voteLogPage, setVoteLogPage] = useState(1)
+  const [voteLogTotalPages, setVoteLogTotalPages] = useState(1)
+  const [voteLogTotal, setVoteLogTotal] = useState(0)
   const [usersList, setUsersList] = useState<AdminUser[]>([])
   const [overviewData, setOverviewData] = useState<OverviewData>({
     totalContestants: 0,
@@ -158,6 +161,9 @@ export function useAdminData() {
           country: v.country,
         }))
         setVoteLogList(entries)
+        setVoteLogPage(data.page ?? 1)
+        setVoteLogTotalPages(data.totalPages ?? 1)
+        setVoteLogTotal(data.total ?? entries.length)
       }
       if (overviewRes.ok) {
         setOverviewData(await overviewRes.json())
@@ -779,6 +785,9 @@ export function useAdminData() {
         } else {
           toast.info(data.message || 'No new payments to verify')
         }
+        if (data.errors?.length > 0) {
+          toast.error(`${data.errors.length} transaction(s) could not be checked — PesaPal API error. Check server logs.`)
+        }
       } else {
         toast.error(data.error || 'Failed to verify pending votes')
       }
@@ -979,6 +988,35 @@ export function useAdminData() {
     handleExportCSV,
     handleExportVoteLog,
     handleVerifyPending,
+    voteLogPage,
+    voteLogTotalPages,
+    voteLogTotal,
+    fetchVoteLogPage: useCallback(async (page: number) => {
+      try {
+        const res = await fetch(`/api/admin/votes?page=${page}`)
+        if (!res.ok) return
+        const data = await res.json()
+        const entries = (data.votes || []).map((v: { id: string; time: string; voterEmail: string; voterName?: string; contestant: string; category: string; verified: boolean; packageName: string; votesCount: number; amountPaid: number; country?: string }) => ({
+          id: v.id,
+          time: new Date(v.time).toLocaleString('en-GB'),
+          voterEmail: v.voterEmail || 'unknown',
+          voterName: v.voterName || '',
+          contestant: v.contestant || 'unknown',
+          category: v.category || 'unknown',
+          verified: v.verified,
+          packageName: v.packageName || '',
+          votesCount: v.votesCount,
+          amountPaid: v.amountPaid,
+          country: v.country,
+        }))
+        setVoteLogList(entries)
+        setVoteLogPage(data.page ?? page)
+        setVoteLogTotalPages(data.totalPages ?? 1)
+        setVoteLogTotal(data.total ?? entries.length)
+      } catch {
+        // silently fail
+      }
+    }, []),
     handleResetVotes,
     // Users
     usersList,

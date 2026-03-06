@@ -38,12 +38,13 @@ export async function GET(request: NextRequest) {
     // Get transaction status from PesaPal
     const status = await getTransactionStatus(orderTrackingId)
 
-    // Idempotency: skip re-processing if transaction is already in a terminal state
+    // Idempotency: skip re-processing only for completed/failed/reversed — not 4 (pending/cancelled)
+    // so that a payment that was initially pending can still be reconciled if PesaPal retries the IPN.
     const existingTx = await prisma.pesapalTransaction.findUnique({
       where: { orderTrackingId },
       select: { statusCode: true },
     })
-    if (existingTx && ['1', '2', '3', '4'].includes(existingTx.statusCode || '')) {
+    if (existingTx && ['1', '2', '3'].includes(existingTx.statusCode || '')) {
       return NextResponse.json({
         orderNotificationType: 'IPNCHANGE',
         orderTrackingId,
@@ -117,8 +118,9 @@ export async function GET(request: NextRequest) {
         })
       }
     }
-    // Handle failed/reversed/cancelled payments (status_code 2=failed, 3=reversed, 4=cancelled)
-    else if (status.status_code >= 2) {
+    // Handle failed/reversed/cancelled payments (status_code 2=failed, 3=reversed)
+    // We do NOT act on status_code 4 here — treat it as still-pending so a retry can verify it.
+    else if (status.status_code === 2 || status.status_code === 3) {
       const transaction = await prisma.pesapalTransaction.findUnique({
         where: { orderTrackingId },
       })
