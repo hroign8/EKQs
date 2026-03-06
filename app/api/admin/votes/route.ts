@@ -162,12 +162,51 @@ export async function POST(request: NextRequest) {
  * PATCH /api/admin/votes
  * Admin endpoint — re-checks PesaPal for all pending vote transactions
  * and verifies any that have been completed.
+ *
+ * Query params:
+ *   ?txId=<orderTrackingId> — check a single transaction (diagnostic mode)
  */
-export async function PATCH() {
+export async function PATCH(request: NextRequest) {
   const { error } = await requireAdmin()
   if (error) return error
 
   try {
+    // ── Single-transaction diagnostic mode ──
+    const singleTxId = request.nextUrl.searchParams.get('txId')
+    if (singleTxId) {
+      if (!/^[a-zA-Z0-9-]+$/.test(singleTxId)) {
+        return NextResponse.json({ error: 'Invalid transaction ID format' }, { status: 400 })
+      }
+      const status = await getTransactionStatus(singleTxId)
+      const dbRecord = await prisma.pesapalTransaction.findUnique({
+        where: { orderTrackingId: singleTxId },
+      })
+      return NextResponse.json({
+        pesapalResponse: {
+          status_code: status.status_code,
+          payment_status_description: status.payment_status_description,
+          payment_method: status.payment_method,
+          amount: status.amount,
+          currency: status.currency,
+          confirmation_code: status.confirmation_code,
+          payment_account: status.payment_account,
+          created_date: status.created_date,
+          message: status.message,
+          error: status.error,
+        },
+        dbRecord: dbRecord ? {
+          orderTrackingId: dbRecord.orderTrackingId,
+          merchantReference: dbRecord.merchantReference,
+          amount: dbRecord.amount,
+          status: dbRecord.status,
+          statusCode: dbRecord.statusCode,
+          transactionType: dbRecord.transactionType,
+          createdAt: dbRecord.createdAt,
+        } : null,
+      })
+    }
+
+    // ── Bulk reconciliation ──
     // Find all unverified votes that have a PesaPal transaction ID
     const pendingVotes = await prisma.vote.findMany({
       where: { verified: false, transactionId: { not: null } },
@@ -202,6 +241,8 @@ export async function PATCH() {
     let verifiedCount = 0
     let removedCount = 0
     const errors: string[] = []
+    const statusBreakdown: Record<number, number> = {}
+    const samplePending: { txId: string; description: string; amount: number; method: string }[] = []
     const startTime = Date.now()
     const TIME_BUDGET_MS = 50_000 // stop before 60s function timeout
     const BATCH_SIZE = 5
@@ -217,7 +258,20 @@ export async function PATCH() {
         batch.map(async (orderTrackingId) => {
           const status = await getTransactionStatus(orderTrackingId)
 
-          console.log(`[Reconcile] ${orderTrackingId}: status_code=${status.status_code}, description=${status.payment_status_description}, amount=${status.amount}, method=${status.payment_method}`)
+          console.log(`[Reconcile] ${orderTrackingId}: status_code=${status.status_code}, description=${status.payment_status_description}, amount=${status.amount}, method=${status.payment_method}, confirmation=${status.confirmation_code}`)
+
+          // Track status code distribution
+          statusBreakdown[status.status_code] = (statusBreakdown[status.status_code] || 0) + 1
+
+          // Collect sample pending transactions for diagnostics (max 3)
+          if (status.status_code === 0 && samplePending.length < 3) {
+            samplePending.push({
+              txId: orderTrackingId,
+              description: status.payment_status_description || status.message || 'no description',
+              amount: status.amount ?? 0,
+              method: status.payment_method || 'unknown',
+            })
+          }
 
           await prisma.pesapalTransaction.updateMany({
             where: { orderTrackingId },
@@ -271,6 +325,8 @@ export async function PATCH() {
       verified: verifiedCount,
       removed: totalRemoved,
       stillPending,
+      statusBreakdown,
+      samplePending: samplePending.length > 0 ? samplePending : undefined,
       errors: errors.length > 0 ? errors : undefined,
       message: parts.join('. '),
     })

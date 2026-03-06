@@ -215,7 +215,11 @@ export function useAdminData() {
               toast.success(`Auto-verified ${data.verified} completed payment(s) from PesaPal`)
             }
             if (data?.stillPending > 0 && data?.verified === 0) {
-              toast.info(`${data.stillPending} payment(s) still processing on PesaPal`)
+              // PesaPal says these are still pending — log diagnostics
+              console.warn('[Admin] PesaPal status breakdown:', data.statusBreakdown)
+              if (data.samplePending) {
+                console.warn('[Admin] Sample pending transactions:', data.samplePending)
+              }
             }
             if (data?.errors?.length > 0) {
               toast.error(`${data.errors.length} transaction(s) could not be checked`)
@@ -807,8 +811,21 @@ export function useAdminData() {
         if (data.verified > 0 || data.removed > 0) {
           toast.success(data.message)
           await fetchAdminData()
+        } else if (data.checked > 0) {
+          // Checked but nothing changed — show PesaPal status breakdown
+          const breakdown = data.statusBreakdown || {}
+          const details: string[] = []
+          if (breakdown[0]) details.push(`${breakdown[0]} pending/invalid`)
+          if (breakdown[1]) details.push(`${breakdown[1]} completed`)
+          if (breakdown[2]) details.push(`${breakdown[2]} failed`)
+          if (breakdown[3]) details.push(`${breakdown[3]} reversed`)
+          toast.info(`Checked ${data.checked} transaction(s) on PesaPal: ${details.join(', ') || 'all status 0'}. PesaPal has not confirmed these payments yet.`)
+          console.warn('[Verify] Status breakdown:', breakdown)
+          if (data.samplePending) {
+            console.warn('[Verify] Sample pending transactions:', data.samplePending)
+          }
         } else {
-          toast.info(data.message || 'No new payments to verify')
+          toast.info(data.message || 'No pending votes to check')
         }
         if (data.errors?.length > 0) {
           toast.error(`${data.errors.length} transaction(s) could not be checked — PesaPal API error. Check server logs.`)
