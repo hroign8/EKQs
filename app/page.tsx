@@ -71,7 +71,7 @@ export default function Home() {
               <MapPin className="w-6 h-6 text-white" />
             </div>
             <h3 className="font-bold text-burgundy-900 mb-1">Venue</h3>
-            <p className="text-gray-600 text-sm">Grand Hub, Kampala</p>
+            <p className="text-gray-600 text-sm">Grandhub, Kampala</p>
           </div>
           <div className="bg-white rounded-2xl p-6 text-center hover:shadow-md transition-shadow">
             <div className="w-12 h-12 bg-gold-500 rounded-full flex items-center justify-center mx-auto mb-4">
