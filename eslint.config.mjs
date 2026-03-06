@@ -10,6 +10,10 @@ const eslintConfig = [
       // Allow unused vars prefixed with _ (common pattern for intentionally ignored params)
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
+    linterOptions: {
+      // Don't report unused disable directives — saves processing
+      reportUnusedDisableDirectives: false,
+    },
   },
 ];
 

@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { formatDate, genderTitle } from '@/lib/utils'
 
 export default function Home() {
-  const { data: contestants, loading: contestantsLoading } = useContestants()
+  const { data: contestants } = useContestants()
   const { data: topContestants, loading: topLoading } = useTopContestants(3)
   const { data: eventData } = useEvent()
 

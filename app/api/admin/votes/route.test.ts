@@ -16,7 +16,8 @@ vi.mock('@/lib/db', () => ({
     user: { findUnique: vi.fn() },
     votingPackage: { findUnique: vi.fn() },
     vote: { create: vi.fn() },
-    contestant: { findMany: vi.fn() },
+    contestant: { findUnique: vi.fn(), findMany: vi.fn() },
+    votingCategory: { findUnique: vi.fn() },
     vote_findMany: vi.fn(),
     vote_count: vi.fn(),
   },
@@ -32,6 +33,8 @@ import { prisma } from '@/lib/db'
 
 const mockUser = { id: TEST_IDS.user, email: 'voter@example.com', name: 'Voter' }
 const mockPackage = { id: TEST_IDS.package, name: 'Gold', votes: 5, price: 10, isActive: true }
+const mockContestant = { id: TEST_IDS.contestant, isActive: true }
+const mockCategory = { id: TEST_IDS.category, isActive: true }
 const mockVote = { id: TEST_IDS.vote, userId: TEST_IDS.user, contestantId: TEST_IDS.contestant, categoryId: TEST_IDS.category, packageId: TEST_IDS.package, votesCount: 5, amountPaid: 10, verified: true }
 
 function postRequest(body: unknown): NextRequest {
@@ -46,6 +49,8 @@ describe('POST /api/admin/votes', () => {
   beforeEach(() => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never)
     vi.mocked(prisma.votingPackage.findUnique).mockResolvedValue(mockPackage as never)
+    vi.mocked(prisma.contestant.findUnique).mockResolvedValue(mockContestant as never)
+    vi.mocked(prisma.votingCategory.findUnique).mockResolvedValue(mockCategory as never)
     vi.mocked(prisma.vote.create).mockResolvedValue(mockVote as never)
   })
 
