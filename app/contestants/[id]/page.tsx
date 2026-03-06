@@ -57,9 +57,9 @@ export default function ContestantDetailsPage() {
   const contestantRank = contestant.rank || 0
 
   const voteCategories = categories.map(cat => ({
-    key: cat.slug,
+    key: cat.slug ?? cat.id,
     name: cat.name,
-    votes: votes[cat.slug] || 0,
+    votes: cat.slug ? votes[cat.slug] || 0 : 0,
   }))
 
   return (
