@@ -205,6 +205,16 @@ export function useAdminData() {
   useEffect(() => {
     if (!sessionPending && session?.user && isAdmin(session.user)) {
       fetchAdminData()
+      // Auto-reconcile pending votes with PesaPal on page load
+      fetch('/api/admin/votes', { method: 'PATCH' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.verified > 0) {
+            toast.success(`Synced ${data.verified} completed payment(s) from PesaPal`)
+            fetchAdminData()
+          }
+        })
+        .catch(() => {}) // silent — reconciliation is best-effort
     }
   }, [sessionPending, session, fetchAdminData])
 

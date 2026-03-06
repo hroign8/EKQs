@@ -306,6 +306,7 @@ export default function AdminPage() {
             categoriesList={admin.categoriesList}
             selectedCategory={admin.selectedCategory}
             onSelectCategory={admin.setSelectedCategory}
+            onVerifyPending={admin.handleVerifyPending}
           />
         )}
 
