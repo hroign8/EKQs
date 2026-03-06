@@ -253,8 +253,9 @@ export async function PATCH() {
           })
           verifiedCount += result.count
         }
-        // status_code 2 = failed, 3 = reversed, 4 = cancelled
-        else if (status.status_code >= 2) {
+        // Only mark as failed on explicit failure (2) or reversal (3) — NOT on
+        // status 4 (cancelled/pending) which may still complete later.
+        else if (status.status_code === 2 || status.status_code === 3) {
           const result = await prisma.ticketPurchase.updateMany({
             where: { transactionId: orderTrackingId, status: 'pending' },
             data: { status: 'failed' },

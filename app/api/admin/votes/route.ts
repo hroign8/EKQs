@@ -289,7 +289,9 @@ export async function PATCH(request: NextRequest) {
               data: { verified: true },
             })
             return { verified: result.count, removed: 0, statusCode: 1 }
-          } else if (status.status_code >= 2) {
+          } else if (status.status_code === 2 || status.status_code === 3) {
+            // Only delete on explicit failure (2) or reversal (3) — NOT on
+            // status 4 (cancelled/pending) which may still complete later.
             const result = await prisma.vote.deleteMany({
               where: { transactionId: orderTrackingId, verified: false },
             })
