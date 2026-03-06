@@ -208,7 +208,7 @@ export default function AdminPage() {
                 <CreditCard className="w-4 h-4" />
                 <span>Transactions</span>
               </div>
-              <p className="text-2xl font-black text-white">{admin.voteLogList.length.toLocaleString()}</p>
+              <p className="text-2xl font-black text-white">{admin.voteLogTotal.toLocaleString()}</p>
             </div>
 
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
@@ -336,6 +336,8 @@ export default function AdminPage() {
         {activeTab === 'revenue' && (
           <RevenueTab
             voteLogList={admin.voteLogList}
+            voteLogTotal={admin.voteLogTotal}
+            voteLogStats={admin.voteLogStats}
             packagesList={admin.packagesList}
             onSwitchTab={setActiveTab}
           />

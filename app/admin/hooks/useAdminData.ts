@@ -933,21 +933,12 @@ export function useAdminData() {
     }
   }, [toast])
 
-  // ── Revenue helpers (memoised values, computed once per voteLogList change) ──
-  const totalRevenue = useMemo(
-    () => voteLogList.reduce((total, entry) => total + entry.amountPaid, 0),
-    [voteLogList]
-  )
+  // ── Revenue helpers (derived from server-side aggregate stats) ──
+  const totalRevenue = voteLogStats.verifiedRevenue + voteLogStats.pendingRevenue
 
-  const totalVotesSold = useMemo(
-    () => voteLogList.reduce((total, entry) => total + entry.votesCount, 0),
-    [voteLogList]
-  )
+  const totalVotesSold = voteLogStats.totalVotesCount
 
-  const averageTransactionValue = useMemo(
-    () => voteLogList.length === 0 ? 0 : totalRevenue / voteLogList.length,
-    [voteLogList, totalRevenue]
-  )
+  const averageTransactionValue = voteLogTotal === 0 ? 0 : totalRevenue / voteLogTotal
 
   return {
     // Auth
