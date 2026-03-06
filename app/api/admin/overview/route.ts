@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/api-utils'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/overview
  * Admin endpoint — returns dashboard overview stats.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { isAdmin } from '@/types'
 import type { Contestant } from '@/types'
@@ -204,19 +204,31 @@ export function useAdminData() {
 
   useEffect(() => {
     if (!sessionPending && session?.user && isAdmin(session.user)) {
-      fetchAdminData()
-      // Auto-reconcile pending votes with PesaPal on page load
-      fetch('/api/admin/votes', { method: 'PATCH' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (data?.verified > 0) {
-            toast.success(`Synced ${data.verified} completed payment(s) from PesaPal`)
-            fetchAdminData()
+      // Reconcile pending payments with PesaPal first, then load fresh data
+      ;(async () => {
+        // Run reconciliation first so data reflects any newly-completed payments
+        try {
+          const res = await fetch('/api/admin/votes', { method: 'PATCH' })
+          if (res.ok) {
+            const data = await res.json()
+            if (data?.verified > 0) {
+              toast.success(`Auto-verified ${data.verified} completed payment(s) from PesaPal`)
+            }
+            if (data?.stillPending > 0 && data?.verified === 0) {
+              toast.info(`${data.stillPending} payment(s) still processing on PesaPal`)
+            }
+            if (data?.errors?.length > 0) {
+              toast.error(`${data.errors.length} transaction(s) could not be checked`)
+            }
           }
-        })
-        .catch(() => {}) // silent — reconciliation is best-effort
+        } catch {
+          // Non-blocking — proceed to load data even if reconciliation fails
+        }
+        // Now load all admin data (reflects any reconciled payments)
+        await fetchAdminData()
+      })()
     }
-  }, [sessionPending, session, fetchAdminData])
+  }, [sessionPending, session, fetchAdminData, toast])
 
   // ── Image upload helpers ────────────────────────────────
   const processImageFile = useCallback((file: File) => {

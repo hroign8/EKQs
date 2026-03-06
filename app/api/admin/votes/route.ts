@@ -4,6 +4,9 @@ import { requireAdmin } from '@/lib/api-utils'
 import { manualVoteSchema, isValidObjectId } from '@/lib/validations'
 import { getTransactionStatus } from '@/lib/pesapal'
 
+// Prevent Next.js from caching admin data responses
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/votes
  * Admin endpoint — returns the vote log with pagination and filtering.
@@ -214,6 +217,8 @@ export async function PATCH() {
         batch.map(async (orderTrackingId) => {
           const status = await getTransactionStatus(orderTrackingId)
 
+          console.log(`[Reconcile] ${orderTrackingId}: status_code=${status.status_code}, description=${status.payment_status_description}, amount=${status.amount}, method=${status.payment_method}`)
+
           await prisma.pesapalTransaction.updateMany({
             where: { orderTrackingId },
             data: {
@@ -229,14 +234,14 @@ export async function PATCH() {
               where: { transactionId: orderTrackingId, verified: false },
               data: { verified: true },
             })
-            return { verified: result.count, removed: 0 }
+            return { verified: result.count, removed: 0, statusCode: 1 }
           } else if (status.status_code >= 2) {
             const result = await prisma.vote.deleteMany({
               where: { transactionId: orderTrackingId, verified: false },
             })
-            return { verified: 0, removed: result.count }
+            return { verified: 0, removed: result.count, statusCode: status.status_code }
           }
-          return { verified: 0, removed: 0 }
+          return { verified: 0, removed: 0, statusCode: status.status_code }
         })
       )
 
@@ -254,15 +259,18 @@ export async function PATCH() {
     }
 
     const totalRemoved = removedCount + orphanedResult.count
+    const stillPending = uniqueTransactionIds.length - verifiedCount - removedCount
     const parts: string[] = []
     if (verifiedCount > 0) parts.push(`Verified ${verifiedCount} vote(s)`)
     if (totalRemoved > 0) parts.push(`Removed ${totalRemoved} failed/cancelled vote(s)`)
+    if (stillPending > 0) parts.push(`${stillPending} payment(s) still processing on PesaPal`)
     if (parts.length === 0) parts.push(`Checked ${uniqueTransactionIds.length} transaction(s), no changes`)
 
     return NextResponse.json({
       checked: uniqueTransactionIds.length,
       verified: verifiedCount,
       removed: totalRemoved,
+      stillPending,
       errors: errors.length > 0 ? errors : undefined,
       message: parts.join('. '),
     })

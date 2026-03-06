@@ -14,7 +14,7 @@ import { genderTitle } from '@/lib/utils'
 import { useState } from 'react'
 
 interface ResultsTabProps {
-  contestantsList: Contestant[]
+contestantsList: Contestant[]
   categoriesList: Category[]
   selectedCategory: string
   onSelectCategory: (slug: string) => void
