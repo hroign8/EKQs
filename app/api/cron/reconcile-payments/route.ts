@@ -68,23 +68,26 @@ export async function GET(request: NextRequest) {
               include: { contestant: true, category: true, user: true },
             })
 
-            await prisma.vote.updateMany({
+            const updated = await prisma.vote.updateMany({
               where: { transactionId: orderTrackingId, verified: false },
               data: { verified: true },
             })
 
-            // Send confirmation emails
-            for (const vote of votes) {
-              void sendVoteConfirmationEmail(
-                vote.user.email,
-                vote.contestant.name,
-                vote.category.name,
-                vote.votesCount,
-                vote.amountPaid
-              )
+            // Only send emails if we actually verified new votes (prevents duplicates
+            // when cron and IPN/callback fire concurrently for the same transaction).
+            if (updated.count > 0) {
+              for (const vote of votes) {
+                void sendVoteConfirmationEmail(
+                  vote.user.email,
+                  vote.contestant.name,
+                  vote.category.name,
+                  vote.votesCount,
+                  vote.amountPaid
+                )
+              }
             }
 
-            return { verified: votes.length, removed: 0 }
+            return { verified: updated.count, removed: 0 }
           } else if (status.status_code === 2 || status.status_code === 3) {
             // Payment failed (2) or reversed (3) — remove unverified votes
             const result = await prisma.vote.deleteMany({

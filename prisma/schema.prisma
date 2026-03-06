@@ -150,6 +150,8 @@ model Vote {
   @@index([categoryId])
   @@index([userId])
   @@index([userId, contestantId, categoryId])
+  @@index([verified, transactionId])
+  @@index([transactionId])
   @@map("vote")
 }
 

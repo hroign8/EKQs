@@ -23,11 +23,13 @@ export async function GET(request: Request) {
     const userId = session!.user.id
 
     // ── Auto-expire stale pending records (older than 1 hour) ──────────────
-    // This prevents abandoned payment attempts from showing as "pending" forever.
+    // Only remove votes that never started a PesaPal transaction (user abandoned
+    // the payment flow). Votes WITH a transactionId must be kept because PesaPal
+    // may still complete the payment — the cron job will reconcile them.
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
     await Promise.all([
       prisma.vote.deleteMany({
-        where: { userId, verified: false, createdAt: { lt: oneHourAgo } },
+        where: { userId, verified: false, transactionId: null, createdAt: { lt: oneHourAgo } },
       }),
       prisma.ticketPurchase.updateMany({
         where: { userId, status: 'pending', createdAt: { lt: oneHourAgo } },

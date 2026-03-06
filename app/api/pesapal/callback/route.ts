@@ -88,18 +88,22 @@ export async function GET(request: NextRequest) {
             include: { contestant: true, category: true, user: true },
           })
           if (votes.length > 0) {
-            await prisma.vote.updateMany({
-              where: { transactionId: orderTrackingId },
+            const updated = await prisma.vote.updateMany({
+              where: { transactionId: orderTrackingId, verified: false },
               data: { verified: true },
             })
-            for (const vote of votes) {
-              void sendVoteConfirmationEmail(
-                vote.user.email,
-                vote.contestant.name,
-                vote.category.name,
-                vote.votesCount,
-                vote.amountPaid
-              )
+            // Only send emails if we actually verified new votes (prevents duplicates
+            // when both IPN and callback fire concurrently for the same transaction).
+            if (updated.count > 0) {
+              for (const vote of votes) {
+                void sendVoteConfirmationEmail(
+                  vote.user.email,
+                  vote.contestant.name,
+                  vote.category.name,
+                  vote.votesCount,
+                  vote.amountPaid
+                )
+              }
             }
           }
         }
