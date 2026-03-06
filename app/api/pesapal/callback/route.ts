@@ -41,12 +41,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/vote?payment=error', request.url))
     }
 
-    // Retry up to 3 times if payment is still pending (status_code 0).
+    // Retry up to 2 times if payment is still pending (status_code 0).
     // Mobile-money payments often finalise seconds after the redirect.
+    // Keep total wait ≤6 s to stay within Vercel's function timeout.
     let status = await getTransactionStatus(orderTrackingId)
     if (status.status_code === 0) {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        await sleep(3000)
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await sleep(2000)
         status = await getTransactionStatus(orderTrackingId)
         if (status.status_code !== 0) break
       }

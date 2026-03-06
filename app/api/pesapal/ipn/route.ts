@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     // Get transaction status from PesaPal
     const status = await getTransactionStatus(orderTrackingId)
 
-    console.log(`[IPN] Received for ${orderTrackingId}: status_code=${status.status_code}, description=${status.payment_status_description}`)
+    console.warn(`[IPN] Received for ${orderTrackingId}: status_code=${status.status_code}, description=${status.payment_status_description}`)
 
     // Idempotency: skip re-processing only for completed/failed/reversed — not 4 (pending/cancelled)
     // so that a payment that was initially pending can still be reconciled if PesaPal retries the IPN.
