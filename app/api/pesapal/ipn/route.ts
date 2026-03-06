@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
     // Get transaction status from PesaPal
     const status = await getTransactionStatus(orderTrackingId)
 
+    console.log(`[IPN] Received for ${orderTrackingId}: status_code=${status.status_code}, description=${status.payment_status_description}`)
+
     // Idempotency: skip re-processing only for completed/failed/reversed — not 4 (pending/cancelled)
     // so that a payment that was initially pending can still be reconciled if PesaPal retries the IPN.
     const existingTx = await prisma.pesapalTransaction.findUnique({
@@ -53,14 +55,14 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Update transaction record
-    await prisma.pesapalTransaction.update({
+    // Update transaction record (use updateMany to avoid throwing if record is missing)
+    await prisma.pesapalTransaction.updateMany({
       where: { orderTrackingId },
       data: {
         status: status.payment_status_description,
         statusCode: String(status.status_code),
-        paymentMethod: status.payment_method,
-        pesapalTransactionId: status.confirmation_code,
+        paymentMethod: status.payment_method || undefined,
+        pesapalTransactionId: status.confirmation_code || undefined,
       },
     })
 

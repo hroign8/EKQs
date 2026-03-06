@@ -6,11 +6,19 @@ import { createRateLimiter } from '@/lib/rate-limit'
 
 const callbackLimiter = createRateLimiter('pesapal-callback', 30, 60_000)
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 /**
  * GET /api/pesapal/callback
  * Handles the redirect after PesaPal payment.
  * Also updates the database directly — the IPN may arrive late or not at all,
  * so we reconcile the transaction status here to avoid stale pending records.
+ *
+ * Because mobile-money payments (and some card gateways) take a few seconds to
+ * finalise after the redirect, we retry the status check up to 3 times with a
+ * short delay if the first response is still "pending" (status_code 0).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +41,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/vote?payment=error', request.url))
     }
 
-    const status = await getTransactionStatus(orderTrackingId)
+    // Retry up to 3 times if payment is still pending (status_code 0).
+    // Mobile-money payments often finalise seconds after the redirect.
+    let status = await getTransactionStatus(orderTrackingId)
+    if (status.status_code === 0) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await sleep(3000)
+        status = await getTransactionStatus(orderTrackingId)
+        if (status.status_code !== 0) break
+      }
+    }
 
     // ── Reconcile DB (idempotent — safe even if IPN already processed it) ──
     const existingTx = await prisma.pesapalTransaction.findUnique({
@@ -112,6 +129,10 @@ export async function GET(request: NextRequest) {
     // ── Redirect user ──
     if (status.status_code === 1) {
       return NextResponse.redirect(new URL('/vote?payment=success', request.url))
+    } else if (status.status_code === 0) {
+      // Still pending after retries — payment may complete via IPN or manual verification.
+      // Show "processing" instead of "failed" so the voter knows their payment is being processed.
+      return NextResponse.redirect(new URL('/vote?payment=processing', request.url))
     } else {
       return NextResponse.redirect(
         new URL(`/vote?payment=failed&reason=${encodeURIComponent(status.payment_status_description)}`, request.url)

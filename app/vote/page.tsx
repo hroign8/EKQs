@@ -1,14 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 import { useContestants, useApiData } from '@/lib/hooks'
 import { Crown, Heart } from 'lucide-react'
 import VotingModal from '@/components/VotingModal'
 import PageHero from '@/components/PageHero'
 import { genderTitle } from '@/lib/utils'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { useToast } from '@/components/Toast'
 import type { Contestant, VotingCategory } from '@/types'
 
 export default function VotePage() {
@@ -17,6 +19,26 @@ export default function VotePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [showVotingModal, setShowVotingModal] = useState(false)
   const [selectedContestant, setSelectedContestant] = useState<Contestant | null>(null)
+  const searchParams = useSearchParams()
+  const toast = useToast()
+
+  // Show toast feedback for payment redirects from PesaPal callback
+  useEffect(() => {
+    const payment = searchParams.get('payment')
+    if (!payment) return
+    if (payment === 'success') {
+      toast.success('Payment confirmed! Your votes have been counted.')
+    } else if (payment === 'processing') {
+      toast.info('Your payment is being processed. Votes will be added once confirmed.')
+    } else if (payment === 'failed') {
+      const reason = searchParams.get('reason')
+      toast.error(reason ? `Payment failed: ${reason}` : 'Payment failed. Please try again.')
+    } else if (payment === 'error') {
+      toast.error('Something went wrong with the payment. Please try again or contact support.')
+    }
+    // Clean the URL so toast doesn't re-show on refresh
+    window.history.replaceState({}, '', '/vote')
+  }, [searchParams, toast])
 
   const activeCategorySlug = selectedCategory || 'all'
 
