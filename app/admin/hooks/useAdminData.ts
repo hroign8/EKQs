@@ -133,7 +133,8 @@ export function useAdminData() {
       ])
 
       if (contestantsRes.ok) {
-        setContestantsList(await contestantsRes.json())
+        const all = await contestantsRes.json()
+        setContestantsList(all.filter((c: { isActive?: boolean }) => c.isActive !== false))
       }
       if (categoriesRes.ok) {
         const data = await categoriesRes.json()
