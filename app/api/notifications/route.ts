@@ -78,10 +78,13 @@ export async function PATCH(request: NextRequest) {
       if (!isValidObjectId(id)) {
         return NextResponse.json({ error: 'Invalid notification ID' }, { status: 400 })
       }
-      await prisma.notification.update({
+      const result = await prisma.notification.updateMany({
         where: { id, userId: session.user.id },
         data: { read: true },
       })
+      if (result.count === 0) {
+        return NextResponse.json({ error: 'Notification not found' }, { status: 404 })
+      }
       return NextResponse.json({ success: true })
     }
 

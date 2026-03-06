@@ -27,6 +27,7 @@ interface VoteLogTabProps {
   voteLogPage: number
   voteLogTotalPages: number
   voteLogTotal: number
+  voteLogStats: { verifiedCount: number; pendingCount: number; verifiedRevenue: number; pendingRevenue: number; totalVotesCount: number }
   onPageChange: (page: number) => void
   onAddManualVote: () => void
   onExportVoteLog: () => void
@@ -38,6 +39,7 @@ export default function VoteLogTab({
   voteLogPage,
   voteLogTotalPages,
   voteLogTotal,
+  voteLogStats,
   onPageChange,
   onAddManualVote,
   onExportVoteLog,
@@ -63,10 +65,7 @@ export default function VoteLogTab({
     return true
   })
 
-  const verifiedCount = voteLogList.filter(v => v.verified).length
-  const pendingCount = voteLogList.length - verifiedCount
-  const verifiedRevenue = voteLogList.filter(v => v.verified).reduce((s, v) => s + (v.amountPaid || 0), 0)
-  const pendingRevenue = voteLogList.filter(v => !v.verified).reduce((s, v) => s + (v.amountPaid || 0), 0)
+  const { verifiedCount, pendingCount, verifiedRevenue, pendingRevenue, totalVotesCount } = voteLogStats
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden">
@@ -123,7 +122,7 @@ export default function VoteLogTab({
         </div>
         <div className="bg-white rounded-xl p-3 sm:p-4">
           <div className="text-lg sm:text-2xl font-black text-burgundy-900">
-            {voteLogList.reduce((sum, v) => sum + (v.votesCount || 1), 0).toLocaleString()}
+            {totalVotesCount.toLocaleString()}
           </div>
           <div className="text-xs text-gray-500 font-medium">Total Votes</div>
         </div>
@@ -149,7 +148,7 @@ export default function VoteLogTab({
         </div>
         <div className="flex gap-2">
           {([
-            { key: 'all', label: 'All', count: voteLogList.length },
+            { key: 'all', label: 'All', count: voteLogTotal },
             { key: 'verified', label: 'Verified', count: verifiedCount },
             { key: 'pending', label: 'Pending', count: pendingCount },
           ] as const).map(f => (

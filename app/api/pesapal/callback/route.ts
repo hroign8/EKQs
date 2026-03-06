@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       // Update transaction record if it exists; skip if not (vote was created without a
       // matching tx record — DB inconsistency — but we still want to verify the vote).
       if (existingTx) {
-        await prisma.pesapalTransaction.update({
+        await prisma.pesapalTransaction.updateMany({
           where: { orderTrackingId },
           data: {
             status: status.payment_status_description,
@@ -127,15 +127,17 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Redirect user ──
+    const txType = existingTx?.transactionType
+    const successPage = txType === 'ticket' ? '/ticketing' : '/vote'
+
     if (status.status_code === 1) {
-      return NextResponse.redirect(new URL('/vote?payment=success', request.url))
+      return NextResponse.redirect(new URL(`${successPage}?payment=success`, request.url))
     } else if (status.status_code === 0) {
       // Still pending after retries — payment may complete via IPN or manual verification.
-      // Show "processing" instead of "failed" so the voter knows their payment is being processed.
-      return NextResponse.redirect(new URL('/vote?payment=processing', request.url))
+      return NextResponse.redirect(new URL(`${successPage}?payment=processing`, request.url))
     } else {
       return NextResponse.redirect(
-        new URL(`/vote?payment=failed&reason=${encodeURIComponent(status.payment_status_description)}`, request.url)
+        new URL(`${successPage}?payment=failed&reason=${encodeURIComponent(status.payment_status_description)}`, request.url)
       )
     }
   } catch (error) {

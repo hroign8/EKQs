@@ -44,6 +44,7 @@ export function useAdminData() {
   const [voteLogPage, setVoteLogPage] = useState(1)
   const [voteLogTotalPages, setVoteLogTotalPages] = useState(1)
   const [voteLogTotal, setVoteLogTotal] = useState(0)
+  const [voteLogStats, setVoteLogStats] = useState({ verifiedCount: 0, pendingCount: 0, verifiedRevenue: 0, pendingRevenue: 0, totalVotesCount: 0 })
   const [usersList, setUsersList] = useState<AdminUser[]>([])
   const [overviewData, setOverviewData] = useState<OverviewData>({
     totalContestants: 0,
@@ -164,6 +165,7 @@ export function useAdminData() {
         setVoteLogPage(data.page ?? 1)
         setVoteLogTotalPages(data.totalPages ?? 1)
         setVoteLogTotal(data.total ?? entries.length)
+        if (data.stats) setVoteLogStats(data.stats)
       }
       if (overviewRes.ok) {
         setOverviewData(await overviewRes.json())
@@ -818,6 +820,7 @@ export function useAdminData() {
       setVoteLogPage(data.page ?? page)
       setVoteLogTotalPages(data.totalPages ?? 1)
       setVoteLogTotal(data.total ?? entries.length)
+      if (data.stats) setVoteLogStats(data.stats)
     } catch {
       // silently fail
     }
@@ -1018,6 +1021,7 @@ export function useAdminData() {
     voteLogPage,
     voteLogTotalPages,
     voteLogTotal,
+    voteLogStats,
     fetchVoteLogPage,
     handleResetVotes,
     // Users

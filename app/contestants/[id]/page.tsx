@@ -3,18 +3,20 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Image from 'next/image'
-import { Heart, ChevronLeft, Crown, Award, Camera } from 'lucide-react'
+import { Heart, ChevronLeft, Crown } from 'lucide-react'
 import Link from 'next/link'
 import VotingModal from '@/components/VotingModal'
-import type { Contestant } from '@/types'
+import type { Contestant, VotingCategory } from '@/types'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { genderTitle } from '@/lib/utils'
+import { useApiData } from '@/lib/hooks'
 
 export default function ContestantDetailsPage() {
   const params = useParams()
   const [contestant, setContestant] = useState<Contestant | null>(null)
   const [loading, setLoading] = useState(true)
   const [showVotingModal, setShowVotingModal] = useState(false)
+  const { data: categories } = useApiData<VotingCategory[]>('/api/categories', [])
 
   useEffect(() => {
     const fetchContestant = async () => {
@@ -54,12 +56,11 @@ export default function ContestantDetailsPage() {
   const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0)
   const contestantRank = contestant.rank || 0
 
-  const voteCategories = [
-    { key: 'peoplesChoice', name: "People's Choice", icon: Heart, votes: votes.peoplesChoice || 0 },
-    { key: 'bestTalent', name: 'Best Talent', icon: Award, votes: votes.bestTalent || 0 },
-    { key: 'bestEveningWear', name: 'Best Evening Wear', icon: Crown, votes: votes.bestEveningWear || 0 },
-    { key: 'missPhotogenic', name: 'Miss Photogenic', icon: Camera, votes: votes.missPhotogenic || 0 },
-  ]
+  const voteCategories = categories.map(cat => ({
+    key: cat.slug,
+    name: cat.name,
+    votes: votes[cat.slug] || 0,
+  }))
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -130,7 +131,7 @@ export default function ContestantDetailsPage() {
                   <p className="text-gray-500 text-xs sm:text-sm">Current Rank</p>
                 </div>
                 <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-burgundy-900">4</div>
+                  <div className="text-xl sm:text-2xl font-bold text-burgundy-900">{categories.length}</div>
                   <p className="text-gray-500 text-xs sm:text-sm">Categories</p>
                 </div>
               </div>
@@ -140,12 +141,12 @@ export default function ContestantDetailsPage() {
                 <h3 className="font-bold text-burgundy-900 mb-4">Votes by Category</h3>
                 <div className="space-y-4">
                   {voteCategories.map((category) => {
-                    const percentage = Math.round((category.votes / totalVotes) * 100)
+                    const percentage = totalVotes > 0 ? Math.round((category.votes / totalVotes) * 100) : 0
                     return (
                       <div key={category.key}>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <category.icon className="w-4 h-4 text-gold-500" />
+                            <Crown className="w-4 h-4 text-gold-500" />
                             <span className="text-gray-700 text-sm">{category.name}</span>
                           </div>
                           <span className="font-bold text-burgundy-900">{category.votes.toLocaleString()}</span>

@@ -325,6 +325,7 @@ export default function AdminPage() {
             voteLogPage={admin.voteLogPage}
             voteLogTotalPages={admin.voteLogTotalPages}
             voteLogTotal={admin.voteLogTotal}
+            voteLogStats={admin.voteLogStats}
             onPageChange={admin.fetchVoteLogPage}
             onAddManualVote={admin.handleAddManualVote}
             onExportVoteLog={admin.handleExportVoteLog}

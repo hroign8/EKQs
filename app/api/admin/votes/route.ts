@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       where.verified = verified === 'true'
     }
 
-    const [votes, total] = await Promise.all([
+    const [votes, total, allVotes] = await Promise.all([
       prisma.vote.findMany({
         where,
         include: {
@@ -47,7 +47,17 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.vote.count({ where }),
+      prisma.vote.findMany({
+        where,
+        select: { verified: true, amountPaid: true, votesCount: true },
+      }),
     ])
+
+    const verifiedCount = allVotes.filter(v => v.verified).length
+    const pendingCount = allVotes.length - verifiedCount
+    const verifiedRevenue = allVotes.filter(v => v.verified).reduce((s, v) => s + (v.amountPaid || 0), 0)
+    const pendingRevenue = allVotes.filter(v => !v.verified).reduce((s, v) => s + (v.amountPaid || 0), 0)
+    const totalVotesCount = allVotes.reduce((s, v) => s + (v.votesCount || 1), 0)
 
     return NextResponse.json({
       votes: votes.map((v: { id: string; createdAt: Date; user: { email: string; name: string | null }; contestant: { name: string }; category: { name: string }; package: { name: string }; votesCount: number; amountPaid: number; verified: boolean; country?: string | null }) => ({
@@ -67,6 +77,13 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+      stats: {
+        verifiedCount,
+        pendingCount,
+        verifiedRevenue,
+        pendingRevenue,
+        totalVotesCount,
+      },
     })
   } catch (err) {
     console.error('Admin votes fetch error:', err)
@@ -105,6 +122,18 @@ export async function POST(request: NextRequest) {
     const pkg = await prisma.votingPackage.findUnique({ where: { id: packageId } })
     if (!pkg || !pkg.isActive) {
       return NextResponse.json({ error: 'Package not found or inactive' }, { status: 404 })
+    }
+
+    // Validate contestant and category exist
+    const [contestantExists, categoryExists] = await Promise.all([
+      prisma.contestant.findUnique({ where: { id: contestantId }, select: { id: true, isActive: true } }),
+      prisma.votingCategory.findUnique({ where: { id: categoryId }, select: { id: true, isActive: true } }),
+    ])
+    if (!contestantExists || !contestantExists.isActive) {
+      return NextResponse.json({ error: 'Contestant not found or inactive' }, { status: 404 })
+    }
+    if (!categoryExists || !categoryExists.isActive) {
+      return NextResponse.json({ error: 'Category not found or inactive' }, { status: 404 })
     }
 
     const vote = await prisma.vote.create({

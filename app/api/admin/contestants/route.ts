@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
-import { contestantSchema, updateContestantSchema } from '@/lib/validations'
+import { contestantSchema, updateContestantSchema, isValidObjectId } from '@/lib/validations'
 import { put, del } from '@vercel/blob'
 import crypto from 'crypto'
 
@@ -71,7 +71,6 @@ export async function GET() {
 
   try {
     const contestants = await prisma.contestant.findMany({
-      where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     })
     return NextResponse.json(contestants)
@@ -206,6 +205,10 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return errorResponse('Contestant ID is required')
+    }
+
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid contestant ID format', 400)
     }
 
     const existing = await prisma.contestant.findUnique({ where: { id } })

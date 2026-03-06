@@ -44,7 +44,7 @@ export async function GET() {
  * Admin endpoint — ban or unban a user.
  */
 export async function PATCH(request: Request) {
-  const { error } = await requireAdmin()
+  const { session, error } = await requireAdmin()
   if (error) return error
 
   try {
@@ -53,7 +53,6 @@ export async function PATCH(request: Request) {
     if (!isValidObjectId(id)) return errorResponse('Invalid user ID format', 400)
 
     // Prevent admin from banning themselves
-    const { session } = await requireAdmin()
     if (session!.user.id === id && banned) {
       return errorResponse('You cannot ban your own account', 400)
     }

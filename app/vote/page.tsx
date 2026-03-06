@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
@@ -13,16 +13,10 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import { useToast } from '@/components/Toast'
 import type { Contestant, VotingCategory } from '@/types'
 
-export default function VotePage() {
-  const { data: contestants, loading: contestantsLoading, refetch: refetchContestants } = useContestants()
-  const { data: categories, loading: categoriesLoading } = useApiData<VotingCategory[]>('/api/categories', [])
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [showVotingModal, setShowVotingModal] = useState(false)
-  const [selectedContestant, setSelectedContestant] = useState<Contestant | null>(null)
+function PaymentToast() {
   const searchParams = useSearchParams()
   const toast = useToast()
 
-  // Show toast feedback for payment redirects from PesaPal callback
   useEffect(() => {
     const payment = searchParams.get('payment')
     if (!payment) return
@@ -36,9 +30,18 @@ export default function VotePage() {
     } else if (payment === 'error') {
       toast.error('Something went wrong with the payment. Please try again or contact support.')
     }
-    // Clean the URL so toast doesn't re-show on refresh
     window.history.replaceState({}, '', '/vote')
   }, [searchParams, toast])
+
+  return null
+}
+
+export default function VotePage() {
+  const { data: contestants, loading: contestantsLoading, refetch: refetchContestants } = useContestants()
+  const { data: categories, loading: categoriesLoading } = useApiData<VotingCategory[]>('/api/categories', [])
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [showVotingModal, setShowVotingModal] = useState(false)
+  const [selectedContestant, setSelectedContestant] = useState<Contestant | null>(null)
 
   const activeCategorySlug = selectedCategory || 'all'
 
@@ -68,6 +71,7 @@ export default function VotePage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
+      <Suspense><PaymentToast /></Suspense>
       <PageHero title="Live Standings" subtitle="Cast your vote and watch the competition unfold in real-time" />
 
       <div className="container mx-auto px-4 py-8 sm:py-12">
