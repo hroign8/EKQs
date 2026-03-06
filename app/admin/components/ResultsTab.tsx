@@ -45,7 +45,7 @@ export default function ResultsTab({
                 key={category.id}
                 onClick={() => onSelectCategory(category.slug || category.id)}
                 className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 whitespace-nowrap ${
-                  selectedCategory === category.id
+                  selectedCategory === (category.slug || category.id)
                     ? 'bg-gold-500 text-burgundy-900 shadow-lg scale-105'
                     : 'bg-white text-gray-700 border-2 border-gray-100 hover:border-gold-300 hover:text-gray-900'
                 }`}
@@ -59,7 +59,7 @@ export default function ResultsTab({
           <div className="bg-burgundy-900 px-4 sm:px-6 py-3 sm:py-4">
             <h2 className="text-base sm:text-xl font-bold text-white flex items-center gap-2 sm:gap-3">
               <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-gold-500" />
-              <span>{categoriesList.find(c => c.id === selectedCategory)?.name} Leaderboard</span>
+              <span>{categoriesList.find(c => (c.slug || c.id) === selectedCategory)?.name} Leaderboard</span>
             </h2>
           </div>
           <div>

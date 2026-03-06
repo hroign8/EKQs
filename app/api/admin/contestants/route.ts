@@ -73,7 +73,33 @@ export async function GET() {
     const contestants = await prisma.contestant.findMany({
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json(contestants)
+
+    // Aggregate verified votes per contestant per category (same logic as public API)
+    const voteCounts = await prisma.vote.groupBy({
+      by: ['contestantId', 'categoryId'],
+      _sum: { votesCount: true },
+      where: { verified: true },
+    })
+
+    const categories = await prisma.votingCategory.findMany()
+    const categoryMap = new Map(
+      categories.map(c => [c.id, c.slug] as const)
+    )
+
+    const voteMap = new Map<string, Record<string, number>>()
+    for (const vc of voteCounts) {
+      const slug = categoryMap.get(vc.categoryId)
+      if (!slug) continue
+      if (!voteMap.has(vc.contestantId)) voteMap.set(vc.contestantId, {})
+      voteMap.get(vc.contestantId)![slug] = vc._sum.votesCount || 0
+    }
+
+    const result = contestants.map(c => ({
+      ...c,
+      votes: voteMap.get(c.id) || {},
+    }))
+
+    return NextResponse.json(result)
   } catch (err) {
     console.error('Admin contestants fetch error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
