@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
-export const revalidate = 30
+// Dynamic route (reads request) — no ISR caching.
 
 /**
  * GET /api/contestants/top
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       const response = NextResponse.json(
         fallback.map((c, i) => ({ ...c, totalVotes: 0, position: i + 1 })),
       )
-      response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120')
+      response.headers.set('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=15')
       return response
     }
 
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
       .filter(Boolean)
 
     const response = NextResponse.json(result)
-    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120')
+    response.headers.set('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=15')
     return response
   } catch (error) {
     console.error('Failed to fetch top contestants:', error)

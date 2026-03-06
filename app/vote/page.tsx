@@ -39,6 +39,12 @@ function PaymentToast() {
 export default function VotePage() {
   const { data: contestants, loading: contestantsLoading, refetch: refetchContestants } = useContestants()
   const { data: categories, loading: categoriesLoading } = useApiData<VotingCategory[]>('/api/categories', [])
+
+  // Auto-refresh standings every 30s so "Live Standings" stays current
+  useEffect(() => {
+    const interval = setInterval(refetchContestants, 30_000)
+    return () => clearInterval(interval)
+  }, [refetchContestants])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [showVotingModal, setShowVotingModal] = useState(false)
   const [selectedContestant, setSelectedContestant] = useState<Contestant | null>(null)
