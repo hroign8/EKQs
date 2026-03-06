@@ -796,6 +796,33 @@ export function useAdminData() {
     }
   }, [fetchAdminData, toast])
 
+  const fetchVoteLogPage = useCallback(async (page: number) => {
+    try {
+      const res = await fetch(`/api/admin/votes?page=${page}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const entries = (data.votes || []).map((v: { id: string; time: string; voterEmail: string; voterName?: string; contestant: string; category: string; verified: boolean; packageName: string; votesCount: number; amountPaid: number; country?: string }) => ({
+        id: v.id,
+        time: new Date(v.time).toLocaleString('en-GB'),
+        voterEmail: v.voterEmail || 'unknown',
+        voterName: v.voterName || '',
+        contestant: v.contestant || 'unknown',
+        category: v.category || 'unknown',
+        verified: v.verified,
+        packageName: v.packageName || '',
+        votesCount: v.votesCount,
+        amountPaid: v.amountPaid,
+        country: v.country,
+      }))
+      setVoteLogList(entries)
+      setVoteLogPage(data.page ?? page)
+      setVoteLogTotalPages(data.totalPages ?? 1)
+      setVoteLogTotal(data.total ?? entries.length)
+    } catch {
+      // silently fail
+    }
+  }, [])
+
   const handleResetVotes = useCallback(() => {
     requireDeleteConfirm('reset-all-votes', async () => {
       try {
@@ -991,32 +1018,7 @@ export function useAdminData() {
     voteLogPage,
     voteLogTotalPages,
     voteLogTotal,
-    fetchVoteLogPage: useCallback(async (page: number) => {
-      try {
-        const res = await fetch(`/api/admin/votes?page=${page}`)
-        if (!res.ok) return
-        const data = await res.json()
-        const entries = (data.votes || []).map((v: { id: string; time: string; voterEmail: string; voterName?: string; contestant: string; category: string; verified: boolean; packageName: string; votesCount: number; amountPaid: number; country?: string }) => ({
-          id: v.id,
-          time: new Date(v.time).toLocaleString('en-GB'),
-          voterEmail: v.voterEmail || 'unknown',
-          voterName: v.voterName || '',
-          contestant: v.contestant || 'unknown',
-          category: v.category || 'unknown',
-          verified: v.verified,
-          packageName: v.packageName || '',
-          votesCount: v.votesCount,
-          amountPaid: v.amountPaid,
-          country: v.country,
-        }))
-        setVoteLogList(entries)
-        setVoteLogPage(data.page ?? page)
-        setVoteLogTotalPages(data.totalPages ?? 1)
-        setVoteLogTotal(data.total ?? entries.length)
-      } catch {
-        // silently fail
-      }
-    }, []),
+    fetchVoteLogPage,
     handleResetVotes,
     // Users
     usersList,
