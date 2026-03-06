@@ -335,3 +335,112 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+/**
+ * PUT /api/admin/votes
+ * Admin endpoint — checks PesaPal for every pending vote transaction and
+ * verifies only the ones where payment was actually completed (status_code 1).
+ * Transactions still pending or failed are left unchanged / removed respectively.
+ */
+export async function PUT() {
+  const { error } = await requireAdmin()
+  if (error) return error
+
+  try {
+    const pendingVotes = await prisma.vote.findMany({
+      where: { verified: false, transactionId: { not: null } },
+      select: { id: true, transactionId: true },
+    })
+
+    if (pendingVotes.length === 0) {
+      return NextResponse.json({ verified: 0, failed: 0, stillPending: 0, message: 'No pending votes to check' })
+    }
+
+    const uniqueTxIds = Array.from(new Set(
+      pendingVotes.map(v => v.transactionId).filter((t): t is string => !!t)
+    ))
+
+    let verifiedCount = 0
+    let failedCount = 0
+    let stillPendingCount = 0
+    const errors: string[] = []
+    const BATCH_SIZE = 5
+    const startTime = Date.now()
+    const TIME_BUDGET_MS = 50_000
+
+    for (let i = 0; i < uniqueTxIds.length; i += BATCH_SIZE) {
+      if (Date.now() - startTime > TIME_BUDGET_MS) {
+        errors.push(`Time limit reached — checked ${i} of ${uniqueTxIds.length}`)
+        break
+      }
+
+      const batch = uniqueTxIds.slice(i, i + BATCH_SIZE)
+      const results = await Promise.allSettled(
+        batch.map(async (orderTrackingId) => {
+          const status = await getTransactionStatus(orderTrackingId)
+
+          console.log(`[ForceVerify] ${orderTrackingId}: status_code=${status.status_code}, desc=${status.payment_status_description}, amount=${status.amount}`)
+
+          // Update pesapal transaction record
+          await prisma.pesapalTransaction.updateMany({
+            where: { orderTrackingId },
+            data: {
+              status: status.payment_status_description,
+              statusCode: String(status.status_code),
+              paymentMethod: status.payment_method || undefined,
+              pesapalTransactionId: status.confirmation_code || undefined,
+            },
+          })
+
+          if (status.status_code === 1) {
+            // Payment completed — verify votes
+            const result = await prisma.vote.updateMany({
+              where: { transactionId: orderTrackingId, verified: false },
+              data: { verified: true },
+            })
+            return { verified: result.count, failed: 0, pending: 0 }
+          } else if (status.status_code === 2 || status.status_code === 3) {
+            // Failed or reversed — remove unverified votes
+            const result = await prisma.vote.deleteMany({
+              where: { transactionId: orderTrackingId, verified: false },
+            })
+            return { verified: 0, failed: result.count, pending: 0 }
+          }
+          // Still pending (0 or 4)
+          return { verified: 0, failed: 0, pending: 1 }
+        })
+      )
+
+      for (let j = 0; j < results.length; j++) {
+        const r = results[j]
+        if (r.status === 'fulfilled') {
+          verifiedCount += r.value.verified
+          failedCount += r.value.failed
+          stillPendingCount += r.value.pending
+        } else {
+          const msg = r.reason instanceof Error ? r.reason.message : String(r.reason)
+          console.error(`[ForceVerify] Failed for ${batch[j]}:`, msg)
+          errors.push(`${batch[j]}: ${msg}`)
+        }
+      }
+    }
+
+    const parts: string[] = []
+    if (verifiedCount > 0) parts.push(`Verified ${verifiedCount} completed vote(s)`)
+    if (failedCount > 0) parts.push(`Removed ${failedCount} failed vote(s)`)
+    if (stillPendingCount > 0) parts.push(`${stillPendingCount} still awaiting payment`)
+    if (parts.length === 0) parts.push(`Checked ${uniqueTxIds.length} transaction(s), no changes`)
+
+    return NextResponse.json({
+      checked: uniqueTxIds.length,
+      verified: verifiedCount,
+      failed: failedCount,
+      stillPending: stillPendingCount,
+      errors: errors.length > 0 ? errors : undefined,
+      message: parts.join('. '),
+    })
+  } catch (err) {
+    console.error('Admin force verify error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

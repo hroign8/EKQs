@@ -838,6 +838,30 @@ export function useAdminData() {
     }
   }, [fetchAdminData, toast])
 
+  const handleForceVerifyAll = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/votes', { method: 'PUT' })
+      const data = await res.json()
+      if (res.ok) {
+        if (data.verified > 0 || data.failed > 0) {
+          toast.success(data.message)
+          await fetchAdminData()
+        } else if (data.stillPending > 0) {
+          toast.info(data.message)
+        } else {
+          toast.info(data.message || 'No pending votes to verify')
+        }
+        if (data.errors?.length > 0) {
+          toast.error(`${data.errors.length} transaction(s) could not be checked`)
+        }
+      } else {
+        toast.error(data.error || 'Failed to verify votes')
+      }
+    } catch {
+      toast.error('Failed to verify votes')
+    }
+  }, [fetchAdminData, toast])
+
   const fetchVoteLogPage = useCallback(async (page: number) => {
     try {
       const res = await fetch(`/api/admin/votes?page=${page}`)
@@ -1049,6 +1073,7 @@ export function useAdminData() {
     handleExportCSV,
     handleExportVoteLog,
     handleVerifyPending,
+    handleForceVerifyAll,
     voteLogPage,
     voteLogTotalPages,
     voteLogTotal,

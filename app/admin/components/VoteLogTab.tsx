@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Download, Crown, Search, RefreshCw } from 'lucide-react'
+import { Plus, Download, Crown, Search, RefreshCw, CheckCheck } from 'lucide-react'
 import type { VoteLogEntry } from '../types'
 
 function packageBadgeStyle(name: string): string {
@@ -32,6 +32,7 @@ interface VoteLogTabProps {
   onAddManualVote: () => void
   onExportVoteLog: () => void
   onVerifyPending: () => Promise<void>
+  onForceVerifyAll: () => Promise<void>
 }
 
 export default function VoteLogTab({
@@ -44,10 +45,12 @@ export default function VoteLogTab({
   onAddManualVote,
   onExportVoteLog,
   onVerifyPending,
+  onForceVerifyAll,
 }: VoteLogTabProps) {
   const [filter, setFilter] = useState<'all' | 'verified' | 'pending'>('all')
   const [search, setSearch] = useState('')
   const [verifying, setVerifying] = useState(false)
+  const [forceVerifying, setForceVerifying] = useState(false)
 
   const filtered = voteLogList.filter(v => {
     if (filter === 'verified' && !v.verified) return false
@@ -84,11 +87,24 @@ export default function VoteLogTab({
                 setVerifying(true)
                 try { await onVerifyPending() } finally { setVerifying(false) }
               }}
-              disabled={verifying}
+              disabled={verifying || forceVerifying}
               className="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white rounded-full font-semibold text-sm hover:bg-green-400 transition-all disabled:opacity-60"
             >
               <RefreshCw className={`w-4 h-4 ${verifying ? 'animate-spin' : ''}`} />
               <span>{verifying ? 'Checking...' : 'Verify Pending'}</span>
+            </button>
+          )}
+          {pendingCount > 0 && (
+            <button
+              onClick={async () => {
+                setForceVerifying(true)
+                try { await onForceVerifyAll() } finally { setForceVerifying(false) }
+              }}
+              disabled={verifying || forceVerifying}
+              className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-full font-semibold text-sm hover:bg-orange-400 transition-all disabled:opacity-60"
+            >
+              <CheckCheck className={`w-4 h-4`} />
+              <span>{forceVerifying ? 'Checking All...' : `Verify All (${pendingCount})`}</span>
             </button>
           )}
           <button
