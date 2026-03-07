@@ -4,6 +4,14 @@ import './globals.css'
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
 import { ToastProvider } from '@/components/Toast'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+
+const plusJakarta = Plus_Jakarta_Sans({ 
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-plus-jakarta',
+})
 import { Analytics } from '@vercel/analytics/next'
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ek-qs.vercel.app'
@@ -86,6 +94,7 @@ export default async function RootLayout({
           </div>
           <Footer />
         </ToastProvider>
+        <SpeedInsights />
         <Analytics />
       </body>
     </html>
