@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from 'next'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import { headers } from 'next/headers'
 import './globals.css'
 import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
 import { ToastProvider } from '@/components/Toast'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/next'
 
 const plusJakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -12,7 +14,6 @@ const plusJakarta = Plus_Jakarta_Sans({
   preload: true,
   variable: '--font-plus-jakarta',
 })
-import { Analytics } from '@vercel/analytics/next'
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ek-qs.vercel.app'
 
@@ -86,7 +87,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased" suppressHydrationWarning>
+      <body className={`${plusJakarta.variable} font-sans antialiased`} suppressHydrationWarning>
         <ToastProvider>
           <Navigation />
           <div className="min-h-screen">
