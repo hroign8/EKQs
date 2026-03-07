@@ -36,50 +36,65 @@ export async function GET(request: NextRequest) {
       where.verified = verified === 'true'
     }
 
-    const [votes, total, statsGroups] = await Promise.all([
-      prisma.vote.findMany({
-        where,
-        include: {
-          contestant: { select: { name: true } },
-          category: { select: { name: true } },
-          user: { select: { email: true, name: true } },
-          package: { select: { name: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
+    // Run count + stats first (lightweight indexed queries), then paginated data
+    const verifiedWhere = { ...where, verified: true }
+    const pendingWhere = { ...where, verified: false }
+
+    const [total, verifiedCount, pendingCount, verifiedAgg, pendingAgg] = await Promise.all([
       prisma.vote.count({ where }),
-      prisma.vote.groupBy({
-        by: ['verified'],
-        where,
-        _count: { _all: true },
-        _sum: { amountPaid: true, votesCount: true },
-      }),
+      prisma.vote.count({ where: verifiedWhere }),
+      prisma.vote.count({ where: pendingWhere }),
+      prisma.vote.aggregate({ where: verifiedWhere, _sum: { amountPaid: true, votesCount: true } }),
+      prisma.vote.aggregate({ where: pendingWhere, _sum: { amountPaid: true, votesCount: true } }),
     ])
 
-    const verifiedGroup = statsGroups.find(g => g.verified === true)
-    const pendingGroup = statsGroups.find(g => g.verified === false)
-    const verifiedCount = verifiedGroup?._count._all ?? 0
-    const pendingCount = pendingGroup?._count._all ?? 0
-    const verifiedRevenue = verifiedGroup?._sum.amountPaid ?? 0
-    const pendingRevenue = pendingGroup?._sum.amountPaid ?? 0
-    const totalVotesCount = (verifiedGroup?._sum.votesCount ?? 0) + (pendingGroup?._sum.votesCount ?? 0)
+    const verifiedRevenue = verifiedAgg._sum.amountPaid ?? 0
+    const pendingRevenue = pendingAgg._sum.amountPaid ?? 0
+    const totalVotesCount = (verifiedAgg._sum.votesCount ?? 0) + (pendingAgg._sum.votesCount ?? 0)
+
+    // Paginated vote list — fetch without include to avoid failures from orphaned relations
+    const rawVotes = await prisma.vote.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    })
+
+    // Batch-load related records so missing ones return null instead of crashing
+    const contestantIds = [...new Set(rawVotes.map(v => v.contestantId))]
+    const categoryIds = [...new Set(rawVotes.map(v => v.categoryId))]
+    const userIds = [...new Set(rawVotes.map(v => v.userId))]
+    const packageIds = [...new Set(rawVotes.map(v => v.packageId))]
+
+    const [contestants, categories, users, packages] = await Promise.all([
+      prisma.contestant.findMany({ where: { id: { in: contestantIds } }, select: { id: true, name: true } }),
+      prisma.votingCategory.findMany({ where: { id: { in: categoryIds } }, select: { id: true, name: true } }),
+      prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true, name: true } }),
+      prisma.votingPackage.findMany({ where: { id: { in: packageIds } }, select: { id: true, name: true } }),
+    ])
+
+    const contestantMap = new Map(contestants.map(c => [c.id, c.name]))
+    const categoryMap = new Map(categories.map(c => [c.id, c.name]))
+    const userMap = new Map(users.map(u => [u.id, u]))
+    const packageMap = new Map(packages.map(p => [p.id, p.name]))
 
     return NextResponse.json({
-      votes: votes.map((v: { id: string; createdAt: Date; user: { email: string; name: string | null }; contestant: { name: string }; category: { name: string }; package: { name: string }; votesCount: number; amountPaid: number; verified: boolean; country?: string | null }) => ({
-        id: v.id,
-        time: v.createdAt.toISOString(),
-        voterEmail: v.user.email,
-        voterName: v.user.name,
-        contestant: v.contestant.name,
-        category: v.category.name,
-        packageName: v.package.name,
-        votesCount: v.votesCount,
-        amountPaid: v.amountPaid,
-        verified: v.verified,
-        country: v.country ?? undefined,
-      })),
+      votes: rawVotes.map(v => {
+        const user = userMap.get(v.userId)
+        return {
+          id: v.id,
+          time: v.createdAt.toISOString(),
+          voterEmail: user?.email ?? 'deleted',
+          voterName: user?.name ?? null,
+          contestant: contestantMap.get(v.contestantId) ?? 'Deleted',
+          category: categoryMap.get(v.categoryId) ?? 'Deleted',
+          packageName: packageMap.get(v.packageId) ?? 'Deleted',
+          votesCount: v.votesCount,
+          amountPaid: v.amountPaid,
+          verified: v.verified,
+          country: v.country ?? undefined,
+        }
+      }),
       total,
       page,
       limit,
