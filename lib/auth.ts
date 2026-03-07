@@ -90,8 +90,10 @@ export const auth = betterAuth({
 
   trustedOrigins: [
     baseURL,
-    'http://localhost:3001',
+    ...(isProduction ? [] : ['http://localhost:3001']),
     'https://ek-qs.vercel.app',
+    'https://eritreanqueens.com',
+    'https://www.eritreanqueens.com',
     ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
       : []),

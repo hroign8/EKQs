@@ -8,7 +8,8 @@
   "files.watcherExclude": {
     "**/.next/**": true,
     "**/node_modules/**": true,
-    "**/.git/**": true
+    "**/.git/**": true,
+    "**/public/uploads/**": true
   },
   "files.exclude": {
     "**/.next": true,
@@ -20,16 +21,34 @@
   },
 
   // Limit TypeScript server memory to avoid OOM crashes (8 GB system)
-  "typescript.tsserver.maxTsServerMemory": 4096,
+  "typescript.tsserver.maxTsServerMemory": 1536,
   "typescript.disableAutomaticTypeAcquisition": true,
+  // Reduce TS background work
+  "typescript.tsserver.watchOptions": {
+    "watchFile": "useFsEventsOnParentDirectory",
+    "watchDirectory": "useFsEvents"
+  },
+
+  // ESLint: only run on save, not on every keystroke (saves ~500MB RAM)
+  "eslint.run": "onSave",
 
   // Prevent terminal from buffering excessive output (avoids crash on large build logs)
   "terminal.integrated.scrollback": 1000,
   "terminal.integrated.env.osx": {
-    "NODE_OPTIONS": "--max-old-space-size=4096"
+    "NODE_OPTIONS": "--max-old-space-size=2048"
   },
 
   // Reduce extension host memory pressure
   "extensions.autoUpdate": false,
-  "editor.suggest.preview": false
+  "editor.suggest.preview": false,
+  "editor.quickSuggestions": {
+    "other": "on",
+    "comments": false,
+    "strings": false
+  },
+  // Disable minimap to reduce rendering memory
+  "editor.minimap.enabled": false,
+  // Reduce open editor memory
+  "workbench.editor.limit.enabled": true,
+  "workbench.editor.limit.value": 5
 }

@@ -22,6 +22,7 @@ import {
   Heart,
   CalendarDays,
   ChevronRight,
+  Globe,
 } from 'lucide-react'
 import { useSession, updateUser, changePassword } from '@/lib/auth-client'
 
@@ -57,11 +58,20 @@ export default function SettingsPage() {
   const [voteUpdates, setVoteUpdates] = useState(true)
   const [ticketReminders, setTicketReminders] = useState(true)
 
+  // Currency preference
+  const [preferredCurrency, setPreferredCurrency] = useState<string>('')
+  const [savingCurrency, setSavingCurrency] = useState(false)
+
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name || '')
       setEmail(session.user.email || '')
       setAvatarPreview(session.user.image || null)
+      // Load saved currency preference
+      fetch('/api/user/settings')
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => { if (d?.preferredCurrency) setPreferredCurrency(d.preferredCurrency) })
+        .catch(() => {})
     }
   }, [session])
 
@@ -197,6 +207,26 @@ export default function SettingsPage() {
       month: 'long',
       year: 'numeric',
     })
+  }
+
+  const handleCurrencySave = async () => {
+    setSavingCurrency(true)
+    setError('')
+    setSuccess('')
+    try {
+      const res = await fetch('/api/user/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferredCurrency: preferredCurrency || null }),
+      })
+      if (!res.ok) throw new Error()
+      setSuccess('Currency preference saved!')
+      setTimeout(() => setSuccess(''), 3000)
+    } catch {
+      setError('Failed to save currency preference.')
+    } finally {
+      setSavingCurrency(false)
+    }
   }
 
   return (
@@ -432,6 +462,71 @@ export default function SettingsPage() {
                       </button>
                     </div>
                   </form>
+                </div>
+
+                {/* Currency Preference */}
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                  <div className="p-5 sm:p-6 border-b border-gray-100">
+                    <h2 className="text-lg font-bold text-burgundy-900">Currency Preference</h2>
+                    <p className="text-sm text-gray-500 mt-1">Choose how prices are displayed. By default we detect it from your timezone.</p>
+                  </div>
+                  <div className="p-5 sm:p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Display Currency</label>
+                      <div className="relative">
+                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <select
+                          value={preferredCurrency}
+                          onChange={(e) => setPreferredCurrency(e.target.value)}
+                          className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl text-burgundy-900 bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all appearance-none"
+                        >
+                          <option value="">Auto-detect from timezone</option>
+                          <optgroup label="East Africa">
+                            <option value="UGX">UGX — Ugandan Shilling</option>
+                            <option value="KES">KES — Kenyan Shilling</option>
+                            <option value="ETB">ETB — Ethiopian Birr</option>
+                            <option value="ERN">ERN — Eritrean Nakfa</option>
+                          </optgroup>
+                          <optgroup label="West &amp; Southern Africa">
+                            <option value="NGN">NGN — Nigerian Naira</option>
+                            <option value="GHS">GHS — Ghanaian Cedi</option>
+                            <option value="ZAR">ZAR — South African Rand</option>
+                            <option value="EGP">EGP — Egyptian Pound</option>
+                          </optgroup>
+                          <optgroup label="Major Currencies">
+                            <option value="USD">USD — US Dollar</option>
+                            <option value="EUR">EUR — Euro</option>
+                            <option value="GBP">GBP — British Pound</option>
+                            <option value="CAD">CAD — Canadian Dollar</option>
+                            <option value="AUD">AUD — Australian Dollar</option>
+                            <option value="CHF">CHF — Swiss Franc</option>
+                          </optgroup>
+                          <optgroup label="Middle East &amp; Asia">
+                            <option value="AED">AED — UAE Dirham</option>
+                            <option value="SAR">SAR — Saudi Riyal</option>
+                            <option value="INR">INR — Indian Rupee</option>
+                            <option value="JPY">JPY — Japanese Yen</option>
+                            <option value="CNY">CNY — Chinese Yuan</option>
+                            <option value="SGD">SGD — Singapore Dollar</option>
+                            <option value="KRW">KRW — South Korean Won</option>
+                          </optgroup>
+                        </select>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">This overrides timezone detection on all pages (voting, ticketing).</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCurrencySave}
+                      disabled={savingCurrency}
+                      className="w-full sm:w-auto px-8 py-3 bg-burgundy-900 text-white rounded-full font-semibold hover:bg-burgundy-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                    >
+                      {savingCurrency ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" />Saving...</>
+                      ) : (
+                        'Save Currency'
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Account Stats */}

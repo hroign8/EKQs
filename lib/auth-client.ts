@@ -1,14 +1,15 @@
 import { createAuthClient } from 'better-auth/react'
 import { adminClient } from 'better-auth/client/plugins'
 
-// Get base URL with fallback for browser environment
+// Always use the current origin in the browser so auth requests go to the same
+// domain the user is on (eritreanqueens.com, ek-qs.vercel.app, localhost, etc.).
+// NEXT_PUBLIC_APP_URL is only used as a fallback in non-browser (SSR) contexts.
 const getBaseURL = () => {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL
-  }
-  // Fallback to current origin in browser
   if (typeof window !== 'undefined') {
     return window.location.origin
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL
   }
   return ''
 }

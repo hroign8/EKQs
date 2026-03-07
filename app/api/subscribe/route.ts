@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { z } from 'zod'
+import { z } from 'zod/v4'
 import { createRateLimiter } from '@/lib/rate-limit'
 
 const limiter = createRateLimiter('subscribe', 5, 60_000) // 5 per minute

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
 import { getTransactionStatus } from '@/lib/pesapal'
-import { ticketTypeSchema } from '@/lib/validations'
+import { ticketTypeSchema, isValidObjectId } from '@/lib/validations'
 
 /**
  * GET /api/admin/tickets
@@ -103,6 +103,9 @@ export async function PUT(request: Request) {
     if (!id || typeof id !== 'string') {
       return errorResponse('Ticket type ID is required')
     }
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid ticket type ID format', 400)
+    }
 
     const existing = await prisma.ticketType.findUnique({ where: { id } })
     if (!existing) {
@@ -158,6 +161,9 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return errorResponse('Ticket type ID is required')
+    }
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid ticket type ID format', 400)
     }
 
     const existing = await prisma.ticketType.findUnique({
@@ -247,8 +253,9 @@ export async function PATCH() {
           })
           verifiedCount += result.count
         }
-        // status_code 2 = failed, 3 = reversed, 4 = cancelled
-        else if (status.status_code >= 2) {
+        // Only mark as failed on explicit failure (2) or reversal (3) — NOT on
+        // status 4 (cancelled/pending) which may still complete later.
+        else if (status.status_code === 2 || status.status_code === 3) {
           const result = await prisma.ticketPurchase.updateMany({
             where: { transactionId: orderTrackingId, status: 'pending' },
             data: { status: 'failed' },

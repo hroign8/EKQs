@@ -50,7 +50,7 @@ export default function Button({
   const classes = `${baseClasses} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`
 
   if ('href' in props && props.href) {
-    const { href, target, rel, ...rest } = props as ButtonAsLink
+    const { href, target, rel } = props as ButtonAsLink
     return (
       <Link href={href} target={target} rel={rel} className={classes}>
         {children}

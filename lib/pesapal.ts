@@ -241,7 +241,19 @@ export async function getTransactionStatus(orderTrackingId: string): Promise<Pes
     throw new Error(`PesaPal transaction status failed: HTTP ${response.status} — ${body}`)
   }
 
-  const data: PesapalTransactionStatus = await response.json()
+  const data = await response.json()
 
-  return data
+  // Log the raw PesaPal response to diagnose field-name mismatches
+  console.log(`[PesaPal] Raw status response for ${orderTrackingId}:`, JSON.stringify(data))
+
+  // PesaPal v3 may return the payment status in different fields depending on
+  // the API version / endpoint variant. Check all known fields to be safe:
+  //   - status_code (number): 0=invalid, 1=completed, 2=failed, 3=reversed
+  //   - payment_status_code (string): same values as string
+  //   - status (string): sometimes contains the code, sometimes "200"
+  const raw = data.status_code ?? data.payment_status_code ?? data.statusCode
+  const parsed = Number(raw)
+  data.status_code = Number.isFinite(parsed) ? parsed : 0
+
+  return data as PesapalTransactionStatus
 }

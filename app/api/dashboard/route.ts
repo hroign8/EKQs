@@ -1,17 +1,41 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/api-utils'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('dashboard', 30, 60_000)
 
 /**
  * GET /api/dashboard
  * Authenticated endpoint — returns the current user's activity data.
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { session, error } = await requireAuth()
     if (error) return error
 
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const userId = session!.user.id
+
+    // ── Auto-expire stale pending records (older than 1 hour) ──────────────
+    // Only remove votes that never started a PesaPal transaction (user abandoned
+    // the payment flow). Votes WITH a transactionId must be kept because PesaPal
+    // may still complete the payment — the cron job will reconcile them.
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+    await Promise.all([
+      prisma.vote.deleteMany({
+        where: { userId, verified: false, transactionId: null, createdAt: { lt: oneHourAgo } },
+      }),
+      prisma.ticketPurchase.updateMany({
+        where: { userId, status: 'pending', createdAt: { lt: oneHourAgo } },
+        data: { status: 'expired' },
+      }),
+    ])
 
     const [votes, tickets, messages, account] = await Promise.all([
       prisma.vote.findMany({

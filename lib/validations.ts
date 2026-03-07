@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod/v4'
 
 // ─── MongoDB ObjectId Validation ─────────────────────────────
 // MongoDB ObjectIds are 24-character hex strings

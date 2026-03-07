@@ -1,25 +1,56 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Download, Crown, Search, RefreshCw } from 'lucide-react'
+import { Plus, Download, Crown, Search, RefreshCw, CheckCheck } from 'lucide-react'
 import type { VoteLogEntry } from '../types'
+
+function packageBadgeStyle(name: string): string {
+  const n = (name || '').toUpperCase()
+  if (n.includes('PLATINUM')) return 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+  if (n.includes('GOLD')) return 'bg-amber-100 text-amber-700 border border-amber-200'
+  if (n.includes('SILVER')) return 'bg-slate-100 text-slate-600 border border-slate-200'
+  if (n.includes('BRONZE')) return 'bg-orange-100 text-orange-700 border border-orange-200'
+  if (n.includes('STARTER') || n.includes('FREE') || n.includes('BASIC')) return 'bg-green-100 text-green-700 border border-green-200'
+  return 'bg-purple-100 text-purple-700 border border-purple-200'
+}
+
+function flagEmoji(countryCode: string): string {
+  return countryCode
+    .toUpperCase()
+    .split('')
+    .map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65))
+    .join('')
+}
 
 interface VoteLogTabProps {
   voteLogList: VoteLogEntry[]
+  voteLogPage: number
+  voteLogTotalPages: number
+  voteLogTotal: number
+  voteLogStats: { verifiedCount: number; pendingCount: number; verifiedRevenue: number; pendingRevenue: number; totalVotesCount: number }
+  onPageChange: (page: number) => void
   onAddManualVote: () => void
   onExportVoteLog: () => void
   onVerifyPending: () => Promise<void>
+  onForceVerifyAll: () => Promise<void>
 }
 
 export default function VoteLogTab({
   voteLogList,
+  voteLogPage,
+  voteLogTotalPages,
+  voteLogTotal,
+  voteLogStats,
+  onPageChange,
   onAddManualVote,
   onExportVoteLog,
   onVerifyPending,
+  onForceVerifyAll,
 }: VoteLogTabProps) {
   const [filter, setFilter] = useState<'all' | 'verified' | 'pending'>('all')
   const [search, setSearch] = useState('')
   const [verifying, setVerifying] = useState(false)
+  const [forceVerifying, setForceVerifying] = useState(false)
 
   const filtered = voteLogList.filter(v => {
     if (filter === 'verified' && !v.verified) return false
@@ -30,16 +61,14 @@ export default function VoteLogTab({
         v.voterEmail.toLowerCase().includes(q) ||
         (v.voterName || '').toLowerCase().includes(q) ||
         v.contestant.toLowerCase().includes(q) ||
-        v.category.toLowerCase().includes(q)
+        v.category.toLowerCase().includes(q) ||
+        (v.country || '').toLowerCase().includes(q)
       )
     }
     return true
   })
 
-  const verifiedCount = voteLogList.filter(v => v.verified).length
-  const pendingCount = voteLogList.length - verifiedCount
-  const verifiedRevenue = voteLogList.filter(v => v.verified).reduce((s, v) => s + (v.amountPaid || 0), 0)
-  const pendingRevenue = voteLogList.filter(v => !v.verified).reduce((s, v) => s + (v.amountPaid || 0), 0)
+  const { verifiedCount, pendingCount, verifiedRevenue, pendingRevenue, totalVotesCount } = voteLogStats
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden">
@@ -58,11 +87,24 @@ export default function VoteLogTab({
                 setVerifying(true)
                 try { await onVerifyPending() } finally { setVerifying(false) }
               }}
-              disabled={verifying}
+              disabled={verifying || forceVerifying}
               className="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white rounded-full font-semibold text-sm hover:bg-green-400 transition-all disabled:opacity-60"
             >
               <RefreshCw className={`w-4 h-4 ${verifying ? 'animate-spin' : ''}`} />
               <span>{verifying ? 'Checking...' : 'Verify Pending'}</span>
+            </button>
+          )}
+          {pendingCount > 0 && (
+            <button
+              onClick={async () => {
+                setForceVerifying(true)
+                try { await onForceVerifyAll() } finally { setForceVerifying(false) }
+              }}
+              disabled={verifying || forceVerifying}
+              className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-full font-semibold text-sm hover:bg-orange-400 transition-all disabled:opacity-60"
+            >
+              <CheckCheck className={`w-4 h-4`} />
+              <span>{forceVerifying ? 'Checking All...' : `Verify All (${pendingCount})`}</span>
             </button>
           )}
           <button
@@ -96,7 +138,7 @@ export default function VoteLogTab({
         </div>
         <div className="bg-white rounded-xl p-3 sm:p-4">
           <div className="text-lg sm:text-2xl font-black text-burgundy-900">
-            {voteLogList.reduce((sum, v) => sum + (v.votesCount || 1), 0).toLocaleString()}
+            {totalVotesCount.toLocaleString()}
           </div>
           <div className="text-xs text-gray-500 font-medium">Total Votes</div>
         </div>
@@ -122,7 +164,7 @@ export default function VoteLogTab({
         </div>
         <div className="flex gap-2">
           {([
-            { key: 'all', label: 'All', count: voteLogList.length },
+            { key: 'all', label: 'All', count: voteLogTotal },
             { key: 'verified', label: 'Verified', count: verifiedCount },
             { key: 'pending', label: 'Pending', count: pendingCount },
           ] as const).map(f => (
@@ -144,23 +186,24 @@ export default function VoteLogTab({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[1200px]">
           <thead>
             <tr className="bg-burgundy-50">
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Time</th>
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Voter</th>
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Contestant</th>
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Category</th>
-              <th className="text-left px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Package</th>
-              <th className="text-right px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Votes</th>
-              <th className="text-right px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Amount</th>
-              <th className="text-center px-6 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Status</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Time</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Voter</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Location</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Contestant</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Category</th>
+              <th className="text-left px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Package</th>
+              <th className="text-right px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Votes</th>
+              <th className="text-right px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider">Amount</th>
+              <th className="text-center px-4 py-4 text-xs font-bold text-burgundy-900 uppercase tracking-wider min-w-[110px]">Status</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center">
+                <td colSpan={9} className="px-6 py-12 text-center">
                   <Crown className="w-10 h-10 text-gray-200 mx-auto mb-2" />
                   <p className="text-gray-400 font-medium">
                     {search ? 'No matching votes found' : filter === 'pending' ? 'No pending payments' : filter === 'verified' ? 'No verified payments' : 'No votes recorded yet'}
@@ -174,11 +217,11 @@ export default function VoteLogTab({
                   index !== filtered.length - 1 ? 'border-b border-gray-100' : ''
                 }`}
               >
-                <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">{vote.time.split(',')[0]}</div>
-                  <div className="text-xs text-gray-500">{vote.time.split(',')[1]}</div>
+                <td className="px-4 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{vote.time.split(',')[0]?.trim()}</div>
+                  <div className="text-xs text-gray-500">{vote.time.split(',')[1]?.trim()}</div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-burgundy-100 rounded-full flex items-center justify-center">
                       <span className="text-xs font-bold text-burgundy-700">
@@ -193,24 +236,34 @@ export default function VoteLogTab({
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4 whitespace-nowrap">
+                  {vote.country ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xl leading-none" aria-hidden="true">{flagEmoji(vote.country)}</span>
+                      <span className="text-xs font-semibold text-gray-600 tracking-wide">{vote.country.toUpperCase()}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-300">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-4">
                   <span className="text-sm font-semibold text-burgundy-900">{vote.contestant}</span>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4">
                   <span className="text-sm text-gray-600">{vote.category}</span>
                 </td>
-                <td className="px-6 py-4">
-                  <span className="text-xs font-bold px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full">
+                <td className="px-4 py-4 whitespace-nowrap">
+                  <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${packageBadgeStyle(vote.packageName)}`}>
                     {vote.packageName || 'N/A'}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-4 py-4 text-right whitespace-nowrap">
                   <span className="text-sm font-black text-burgundy-900">{vote.votesCount || 1}</span>
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-4 py-4 text-right whitespace-nowrap">
                   <span className="text-sm font-bold text-emerald-600">${(vote.amountPaid || 0).toFixed(2)}</span>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4 whitespace-nowrap min-w-[110px]">
                   <div className="flex justify-center">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
                       vote.verified
@@ -232,12 +285,23 @@ export default function VoteLogTab({
       <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="text-xs sm:text-sm text-gray-500">
           Showing <span className="font-semibold text-burgundy-900">{filtered.length}</span>{filtered.length !== voteLogList.length && ` of ${voteLogList.length}`} entries
+          {voteLogTotalPages > 1 && (
+            <span className="ml-1">(page {voteLogPage} of {voteLogTotalPages}, {voteLogTotal} total)</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <button className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50" disabled>
+          <button
+            onClick={() => onPageChange(voteLogPage - 1)}
+            disabled={voteLogPage <= 1}
+            className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Previous
           </button>
-          <button className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50" disabled>
+          <button
+            onClick={() => onPageChange(voteLogPage + 1)}
+            disabled={voteLogPage >= voteLogTotalPages}
+            className="px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-500 bg-white rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             Next
           </button>
         </div>

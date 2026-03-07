@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { isAdmin } from '@/types'
 import type { Contestant } from '@/types'
@@ -41,6 +41,10 @@ export function useAdminData() {
   const [categoriesList, setCategoriesList] = useState<Category[]>([])
   const [packagesList, setPackagesList] = useState<VotingPackage[]>([])
   const [voteLogList, setVoteLogList] = useState<VoteLogEntry[]>([])
+  const [voteLogPage, setVoteLogPage] = useState(1)
+  const [voteLogTotalPages, setVoteLogTotalPages] = useState(1)
+  const [voteLogTotal, setVoteLogTotal] = useState(0)
+  const [voteLogStats, setVoteLogStats] = useState({ verifiedCount: 0, pendingCount: 0, verifiedRevenue: 0, pendingRevenue: 0, totalVotesCount: 0 })
   const [usersList, setUsersList] = useState<AdminUser[]>([])
   const [overviewData, setOverviewData] = useState<OverviewData>({
     totalContestants: 0,
@@ -129,7 +133,8 @@ export function useAdminData() {
       ])
 
       if (contestantsRes.ok) {
-        setContestantsList(await contestantsRes.json())
+        const all = await contestantsRes.json()
+        setContestantsList(all.filter((c: { isActive?: boolean }) => c.isActive !== false))
       }
       if (categoriesRes.ok) {
         const data = await categoriesRes.json()
@@ -144,9 +149,9 @@ export function useAdminData() {
       }
       if (votesRes.ok) {
         const data = await votesRes.json()
-        const entries = (data.votes || []).map((v: { id: string; time: string; voterEmail: string; voterName?: string; contestant: string; category: string; verified: boolean; packageName: string; votesCount: number; amountPaid: number }) => ({
+        const entries = (data.votes || []).map((v: { id: string; time: string; voterEmail: string; voterName?: string; contestant: string; category: string; verified: boolean; packageName: string; votesCount: number; amountPaid: number; country?: string }) => ({
           id: v.id,
-          time: new Date(v.time).toLocaleString(),
+          time: new Date(v.time).toLocaleString('en-GB'),
           voterEmail: v.voterEmail || 'unknown',
           voterName: v.voterName || '',
           contestant: v.contestant || 'unknown',
@@ -155,8 +160,13 @@ export function useAdminData() {
           packageName: v.packageName || '',
           votesCount: v.votesCount,
           amountPaid: v.amountPaid,
+          country: v.country,
         }))
         setVoteLogList(entries)
+        setVoteLogPage(data.page ?? 1)
+        setVoteLogTotalPages(data.totalPages ?? 1)
+        setVoteLogTotal(data.total ?? entries.length)
+        if (data.stats) setVoteLogStats(data.stats)
       }
       if (overviewRes.ok) {
         setOverviewData(await overviewRes.json())
@@ -190,13 +200,39 @@ export function useAdminData() {
     } finally {
       setDataLoading(false)
     }
-  }, [])
+  }, [toast])
 
   useEffect(() => {
     if (!sessionPending && session?.user && isAdmin(session.user)) {
-      fetchAdminData()
+      // Reconcile pending payments with PesaPal first, then load fresh data
+      ;(async () => {
+        // Run reconciliation first so data reflects any newly-completed payments
+        try {
+          const res = await fetch('/api/admin/votes', { method: 'PATCH' })
+          if (res.ok) {
+            const data = await res.json()
+            if (data?.verified > 0) {
+              toast.success(`Auto-verified ${data.verified} completed payment(s) from PesaPal`)
+            }
+            if (data?.stillPending > 0 && data?.verified === 0) {
+              // PesaPal says these are still pending — log diagnostics
+              console.warn('[Admin] PesaPal status breakdown:', data.statusBreakdown)
+              if (data.samplePending) {
+                console.warn('[Admin] Sample pending transactions:', data.samplePending)
+              }
+            }
+            if (data?.errors?.length > 0) {
+              toast.error(`${data.errors.length} transaction(s) could not be checked`)
+            }
+          }
+        } catch {
+          // Non-blocking — proceed to load data even if reconciliation fails
+        }
+        // Now load all admin data (reflects any reconciled payments)
+        await fetchAdminData()
+      })()
     }
-  }, [sessionPending, session, fetchAdminData])
+  }, [sessionPending, session, fetchAdminData, toast])
 
   // ── Image upload helpers ────────────────────────────────
   const processImageFile = useCallback((file: File) => {
@@ -225,7 +261,7 @@ export function useAdminData() {
       setUploadProgress(100)
     }
     reader.readAsDataURL(file)
-  }, [])
+  }, [toast])
 
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -359,7 +395,7 @@ export function useAdminData() {
       }
       handleCloseModal()
     } catch { toast.error('An error occurred while saving') }
-  }, [formData, editingContestant, handleCloseModal])
+  }, [formData, editingContestant, handleCloseModal, toast])
 
   // ── Category handlers ───────────────────────────────────
   const handleAddCategory = useCallback(() => {
@@ -429,7 +465,7 @@ export function useAdminData() {
       setShowModal(false)
       setModalType('contestant')
     } catch { toast.error('An error occurred while saving') }
-  }, [categoryFormData, editingCategory])
+  }, [categoryFormData, editingCategory, toast])
 
   // ── Vote handlers ───────────────────────────────────────
   const handleAddManualVote = useCallback(() => {
@@ -465,7 +501,7 @@ export function useAdminData() {
         toast.error(data.error || 'Failed to record vote')
       }
     } catch { toast.error('An error occurred while saving the vote') }
-  }, [voteFormData, voteFormPackageId, fetchAdminData])
+  }, [voteFormData, voteFormPackageId, fetchAdminData, toast])
 
   // ── Event handlers ──────────────────────────────────────
   const handleEditEvent = useCallback(() => {
@@ -537,7 +573,7 @@ export function useAdminData() {
         setPackagesList(prev => prev.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p))
       }
     } catch { toast.error('Failed to toggle package') }
-  }, [packagesList])
+  }, [packagesList, toast])
 
   const handleSavePackage = useCallback(async () => {
     if (!packageFormData.name || !packageFormData.votes || !packageFormData.price) {
@@ -585,7 +621,7 @@ export function useAdminData() {
       }
       handleCloseModal()
     } catch { toast.error('An error occurred while saving') }
-  }, [packageFormData, editingPackage, handleCloseModal])
+  }, [packageFormData, editingPackage, handleCloseModal, toast])
 
   // ── Ticket type handlers ────────────────────────────────
   const handleAddTicket = useCallback(() => {
@@ -636,7 +672,7 @@ export function useAdminData() {
         setTicketTypesList(prev => prev.map(t => t.id === id ? { ...t, isActive: !t.isActive } : t))
       }
     } catch { toast.error('Failed to toggle ticket type') }
-  }, [ticketTypesList])
+  }, [ticketTypesList, toast])
 
   const handleSaveTicket = useCallback(async () => {
     if (!ticketFormData.name || !ticketFormData.price) {
@@ -701,7 +737,7 @@ export function useAdminData() {
       }
       handleCloseModal()
     } catch { toast.error('An error occurred while saving') }
-  }, [ticketFormData, editingTicket, handleCloseModal])
+  }, [ticketFormData, editingTicket, handleCloseModal, toast])
 
   const handleVerifyPendingTickets = useCallback(async () => {
     try {
@@ -775,8 +811,24 @@ export function useAdminData() {
         if (data.verified > 0 || data.removed > 0) {
           toast.success(data.message)
           await fetchAdminData()
+        } else if (data.checked > 0) {
+          // Checked but nothing changed — show PesaPal status breakdown
+          const breakdown = data.statusBreakdown || {}
+          const details: string[] = []
+          if (breakdown[0]) details.push(`${breakdown[0]} pending/invalid`)
+          if (breakdown[1]) details.push(`${breakdown[1]} completed`)
+          if (breakdown[2]) details.push(`${breakdown[2]} failed`)
+          if (breakdown[3]) details.push(`${breakdown[3]} reversed`)
+          toast.info(`Checked ${data.checked} transaction(s) on PesaPal: ${details.join(', ') || 'all status 0'}. PesaPal has not confirmed these payments yet.`)
+          console.warn('[Verify] Status breakdown:', breakdown)
+          if (data.samplePending) {
+            console.warn('[Verify] Sample pending transactions:', data.samplePending)
+          }
         } else {
-          toast.info(data.message || 'No new payments to verify')
+          toast.info(data.message || 'No pending votes to check')
+        }
+        if (data.errors?.length > 0) {
+          toast.error(`${data.errors.length} transaction(s) could not be checked — PesaPal API error. Check server logs.`)
         }
       } else {
         toast.error(data.error || 'Failed to verify pending votes')
@@ -785,6 +837,58 @@ export function useAdminData() {
       toast.error('Failed to verify pending votes')
     }
   }, [fetchAdminData, toast])
+
+  const handleForceVerifyAll = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/votes', { method: 'PUT' })
+      const data = await res.json()
+      if (res.ok) {
+        if (data.verified > 0 || data.failed > 0) {
+          toast.success(data.message)
+          await fetchAdminData()
+        } else if (data.stillPending > 0) {
+          toast.info(data.message)
+        } else {
+          toast.info(data.message || 'No pending votes to verify')
+        }
+        if (data.errors?.length > 0) {
+          toast.error(`${data.errors.length} transaction(s) could not be checked`)
+        }
+      } else {
+        toast.error(data.error || 'Failed to verify votes')
+      }
+    } catch {
+      toast.error('Failed to verify votes')
+    }
+  }, [fetchAdminData, toast])
+
+  const fetchVoteLogPage = useCallback(async (page: number) => {
+    try {
+      const res = await fetch(`/api/admin/votes?page=${page}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const entries = (data.votes || []).map((v: { id: string; time: string; voterEmail: string; voterName?: string; contestant: string; category: string; verified: boolean; packageName: string; votesCount: number; amountPaid: number; country?: string }) => ({
+        id: v.id,
+        time: new Date(v.time).toLocaleString('en-GB'),
+        voterEmail: v.voterEmail || 'unknown',
+        voterName: v.voterName || '',
+        contestant: v.contestant || 'unknown',
+        category: v.category || 'unknown',
+        verified: v.verified,
+        packageName: v.packageName || '',
+        votesCount: v.votesCount,
+        amountPaid: v.amountPaid,
+        country: v.country,
+      }))
+      setVoteLogList(entries)
+      setVoteLogPage(data.page ?? page)
+      setVoteLogTotalPages(data.totalPages ?? 1)
+      setVoteLogTotal(data.total ?? entries.length)
+      if (data.stats) setVoteLogStats(data.stats)
+    } catch {
+      // silently fail
+    }
+  }, [])
 
   const handleResetVotes = useCallback(() => {
     requireDeleteConfirm('reset-all-votes', async () => {
@@ -892,21 +996,12 @@ export function useAdminData() {
     }
   }, [toast])
 
-  // ── Revenue helpers (memoised values, computed once per voteLogList change) ──
-  const totalRevenue = useMemo(
-    () => voteLogList.reduce((total, entry) => total + entry.amountPaid, 0),
-    [voteLogList]
-  )
+  // ── Revenue helpers (derived from server-side aggregate stats) ──
+  const totalRevenue = voteLogStats.verifiedRevenue + voteLogStats.pendingRevenue
 
-  const totalVotesSold = useMemo(
-    () => voteLogList.reduce((total, entry) => total + entry.votesCount, 0),
-    [voteLogList]
-  )
+  const totalVotesSold = voteLogStats.totalVotesCount
 
-  const averageTransactionValue = useMemo(
-    () => voteLogList.length === 0 ? 0 : totalRevenue / voteLogList.length,
-    [voteLogList, totalRevenue]
-  )
+  const averageTransactionValue = voteLogTotal === 0 ? 0 : totalRevenue / voteLogTotal
 
   return {
     // Auth
@@ -978,6 +1073,12 @@ export function useAdminData() {
     handleExportCSV,
     handleExportVoteLog,
     handleVerifyPending,
+    handleForceVerifyAll,
+    voteLogPage,
+    voteLogTotalPages,
+    voteLogTotal,
+    voteLogStats,
+    fetchVoteLogPage,
     handleResetVotes,
     // Users
     usersList,

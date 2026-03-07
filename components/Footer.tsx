@@ -1,6 +1,6 @@
 'use client'
 
-import { Instagram, Facebook, Twitter, Mail, Send, Loader2, CheckCircle } from 'lucide-react'
+import { Instagram, Facebook, Twitter, Youtube, Send, Loader2, CheckCircle } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -66,17 +66,17 @@ export default function Footer() {
               Celebrating excellence, heritage, and beauty. Join us in crowning the next generation of leaders.
             </p>
             <div className="flex space-x-4">
-              <a href="#" rel="noopener noreferrer" aria-label="Instagram" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
+              <a href="https://www.instagram.com/eritrean_kings_and_queens_?igsh=bG1kdjV0Y2Vxejc1" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="#" rel="noopener noreferrer" aria-label="Facebook" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
+              <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
                 <Facebook className="w-5 h-5" />
               </a>
-              <a href="#" rel="noopener noreferrer" aria-label="Twitter" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
+              <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
                 <Twitter className="w-5 h-5" />
               </a>
-              <a href="#" rel="noopener noreferrer" aria-label="Email" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
-                <Mail className="w-5 h-5" />
+              <a href="https://youtube.com/@eritreankingsandqueens?si=Ky9aciEHIYPufGVl" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="w-10 h-10 rounded-full border border-burgundy-700 flex items-center justify-center text-burgundy-200 hover:text-gold-500 hover:border-gold-500 transition-colors">
+                <Youtube className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function Footer() {
 
       <div className="border-t border-burgundy-800">
         <div className="container mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-burgundy-300 text-sm text-center sm:text-left">
-          <p>© {new Date().getFullYear()} Eritrean Kings & Queens. All rights reserved.</p>
+          <p suppressHydrationWarning>© {new Date().getFullYear()} Eritrean Kings & Queens. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link href="/privacy-policy" className="hover:text-gold-500 transition-colors">Privacy Policy</Link>
             <span className="text-burgundy-700">|</span>

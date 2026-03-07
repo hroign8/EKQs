@@ -1,0 +1,22 @@
+{
+  "functions": {
+    "app/api/pesapal/callback/route.ts": {
+      "maxDuration": 25
+    },
+    "app/api/pesapal/ipn/route.ts": {
+      "maxDuration": 15
+    },
+    "app/api/admin/votes/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/cron/reconcile-payments/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/reconcile-payments",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

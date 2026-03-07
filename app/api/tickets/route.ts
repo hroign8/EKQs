@@ -76,26 +76,27 @@ export async function POST(request: Request) {
       lastName: session!.user.name?.split(' ').slice(1).join(' '),
     })
 
-    await prisma.pesapalTransaction.create({
-      data: {
-        orderTrackingId: order.order_tracking_id,
-        merchantReference,
-        transactionType: 'ticket',
-        amount: totalAmount,
-        description: `${quantity}x ${ticketType.name} ticket(s)`,
-      },
-    })
-
-    await prisma.ticketPurchase.create({
-      data: {
-        userId: session!.user.id,
-        ticketTypeId,
-        quantity,
-        totalAmount,
-        transactionId: order.order_tracking_id,
-        status: 'pending',
-      },
-    })
+    await prisma.$transaction([
+      prisma.pesapalTransaction.create({
+        data: {
+          orderTrackingId: order.order_tracking_id,
+          merchantReference,
+          transactionType: 'ticket',
+          amount: totalAmount,
+          description: `${quantity}x ${ticketType.name} ticket(s)`,
+        },
+      }),
+      prisma.ticketPurchase.create({
+        data: {
+          userId: session!.user.id,
+          ticketTypeId,
+          quantity,
+          totalAmount,
+          transactionId: order.order_tracking_id,
+          status: 'pending',
+        },
+      }),
+    ])
 
     return NextResponse.json({
       success: true,

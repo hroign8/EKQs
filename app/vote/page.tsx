@@ -1,31 +1,69 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 import { useContestants, useApiData } from '@/lib/hooks'
 import { Crown, Heart } from 'lucide-react'
 import VotingModal from '@/components/VotingModal'
 import PageHero from '@/components/PageHero'
 import { genderTitle } from '@/lib/utils'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { useToast } from '@/components/Toast'
 import type { Contestant, VotingCategory } from '@/types'
 
+function PaymentToast() {
+  const searchParams = useSearchParams()
+  const toast = useToast()
+
+  useEffect(() => {
+    const payment = searchParams.get('payment')
+    if (!payment) return
+    if (payment === 'success') {
+      toast.success('Payment confirmed! Your votes have been counted.')
+    } else if (payment === 'processing') {
+      toast.info('Your payment is being processed. Votes will be added once confirmed.')
+    } else if (payment === 'failed') {
+      const reason = searchParams.get('reason')
+      toast.error(reason ? `Payment failed: ${reason}` : 'Payment failed. Please try again.')
+    } else if (payment === 'error') {
+      toast.error('Something went wrong with the payment. Please try again or contact support.')
+    }
+    window.history.replaceState({}, '', '/vote')
+  }, [searchParams, toast])
+
+  return null
+}
+
 export default function VotePage() {
-  const { data: contestants, loading: contestantsLoading } = useContestants()
+  const { data: contestants, loading: contestantsLoading, refetch: refetchContestants } = useContestants()
   const { data: categories, loading: categoriesLoading } = useApiData<VotingCategory[]>('/api/categories', [])
+
+  // Auto-refresh standings every 30s so "Live Standings" stays current
+  useEffect(() => {
+    const interval = setInterval(refetchContestants, 30_000)
+    return () => clearInterval(interval)
+  }, [refetchContestants])
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [showVotingModal, setShowVotingModal] = useState(false)
   const [selectedContestant, setSelectedContestant] = useState<Contestant | null>(null)
 
-  const activeCategorySlug = selectedCategory || (categories.length > 0 ? (categories[0].slug ?? 'peoplesChoice') : 'peoplesChoice')
+  const activeCategorySlug = selectedCategory || 'all'
 
   const handleVoteClick = (contestant: Contestant) => {
     setSelectedContestant(contestant)
     setShowVotingModal(true)
   }
 
+  const getTotalVotes = (contestant: Contestant) => {
+    const votes = contestant.votes as Record<string, number> | undefined
+    if (!votes) return 0
+    return Object.values(votes).reduce((sum, v) => sum + (v || 0), 0)
+  }
+
   const getVoteCount = (contestant: Contestant) => {
+    if (activeCategorySlug === 'all') return getTotalVotes(contestant)
     return contestant.votes?.[activeCategorySlug] ?? 0
   }
 
@@ -39,6 +77,7 @@ export default function VotePage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
+      <Suspense><PaymentToast /></Suspense>
       <PageHero title="Live Standings" subtitle="Cast your vote and watch the competition unfold in real-time" />
 
       <div className="container mx-auto px-4 py-8 sm:py-12">
@@ -69,6 +108,19 @@ export default function VotePage() {
         {/* Category Tabs */}
         <div role="tablist" aria-label="Vote categories" className="overflow-x-auto scroll-container -mx-4 px-4 sm:mx-0 sm:px-0 mb-8 sm:mb-10">
           <div className="flex justify-start sm:justify-center gap-2 sm:gap-3 min-w-max sm:min-w-0 sm:flex-wrap">
+            <button
+              id="vote-tab-all"
+              role="tab"
+              aria-selected={activeCategorySlug === 'all'}
+              onClick={() => setSelectedCategory('all')}
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap text-sm sm:text-base ${
+                activeCategorySlug === 'all'
+                  ? 'bg-burgundy-900 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 hover:text-burgundy-900'
+              }`}
+            >
+              All
+            </button>
             {categories.map((category) => (
               <button
                 key={category.slug}
@@ -211,6 +263,7 @@ export default function VotePage() {
             setShowVotingModal(false)
             setSelectedContestant(null)
           }}
+          onSuccess={() => refetchContestants()}
         />
       )}
 

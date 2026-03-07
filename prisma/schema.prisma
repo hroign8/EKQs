@@ -15,12 +15,13 @@ model User {
   email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
-  role          String    @default("user")
-  banned        Boolean   @default(false)
-  banReason     String?
-  banExpires    DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role              String    @default("user")
+  banned            Boolean   @default(false)
+  banReason         String?
+  banExpires        DateTime?
+  preferredCurrency String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   sessions Session[]
   accounts Account[]
@@ -136,6 +137,7 @@ model Vote {
   votesCount    Int      @default(1)
   amountPaid    Float    @default(0)
   transactionId String?
+  country       String?
   verified      Boolean  @default(false)
   createdAt     DateTime @default(now())
 
@@ -148,6 +150,8 @@ model Vote {
   @@index([categoryId])
   @@index([userId])
   @@index([userId, contestantId, categoryId])
+  @@index([verified, transactionId])
+  @@index([transactionId])
   @@map("vote")
 }
 

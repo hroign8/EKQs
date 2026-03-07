@@ -12,6 +12,23 @@ interface ProfileMenuProps {
   onSignOut: () => void
 }
 
+function ProfileAvatar({ user, size }: { user: SessionUser; size: 8 | 10 }) {
+  const initial = (user.name?.[0] || user.email?.[0] || 'U').toUpperCase()
+  return user.image ? (
+    <Image
+      src={user.image}
+      alt={user.name || 'Profile'}
+      width={size === 8 ? 32 : 40}
+      height={size === 8 ? 32 : 40}
+      className={`w-${size} h-${size} rounded-full object-cover ring-2 ring-gold-400/60`}
+    />
+  ) : (
+    <div className={`w-${size} h-${size} rounded-full bg-gold-400 flex items-center justify-center ring-2 ring-gold-400/60`}>
+      <span className={`${size === 8 ? 'text-sm' : 'text-base'} font-bold text-burgundy-900`}>{initial}</span>
+    </div>
+  )
+}
+
 export default function ProfileMenu({ user, onSignOut }: ProfileMenuProps) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState({ top: 0, right: 0 })
@@ -43,24 +60,6 @@ export default function ProfileMenu({ user, onSignOut }: ProfileMenuProps) {
     return () => { window.removeEventListener('scroll', updatePos, true); window.removeEventListener('resize', updatePos) }
   }, [open, updatePos])
 
-  const initial = (user.name?.[0] || user.email?.[0] || 'U').toUpperCase()
-
-  const Avatar = ({ size }: { size: 8 | 10 }) => (
-    user.image ? (
-      <Image
-        src={user.image}
-        alt={user.name || 'Profile'}
-        width={size === 8 ? 32 : 40}
-        height={size === 8 ? 32 : 40}
-        className={`w-${size} h-${size} rounded-full object-cover ring-2 ring-gold-400/60`}
-      />
-    ) : (
-      <div className={`w-${size} h-${size} rounded-full bg-gold-400 flex items-center justify-center ring-2 ring-gold-400/60`}>
-        <span className={`${size === 8 ? 'text-sm' : 'text-base'} font-bold text-burgundy-900`}>{initial}</span>
-      </div>
-    )
-  )
-
   return (
     <>
       <button
@@ -71,7 +70,7 @@ export default function ProfileMenu({ user, onSignOut }: ProfileMenuProps) {
         className="relative flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-xl hover:bg-white/10 transition-all duration-200"
       >
         <div className="relative">
-          <Avatar size={8} />
+          <ProfileAvatar user={user} size={8} />
           <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full ring-2 ring-burgundy-900" />
         </div>
         <ChevronDown className={`w-3 h-3 text-white/50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
@@ -85,7 +84,7 @@ export default function ProfileMenu({ user, onSignOut }: ProfileMenuProps) {
         >
           {/* User Info Header */}
           <div className="px-4 py-4 border-b border-white/10 bg-white/5 flex items-center gap-3">
-            <Avatar size={10} />
+            <ProfileAvatar user={user} size={10} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">{user.name || 'User'}</p>
               <p className="text-xs text-white/50 truncate">{user.email}</p>

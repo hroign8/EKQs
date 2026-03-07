@@ -121,7 +121,7 @@ export default function ContactPage() {
             <div className="lg:col-span-3">
               <div className="bg-white rounded-2xl p-5 sm:p-8">
                 <h2 className="text-xl font-bold text-burgundy-900 mb-2">Send a Message</h2>
-                <p className="text-gray-500 text-sm mb-6">Fill out the form below and we'll get back to you</p>
+                <p className="text-gray-500 text-sm mb-6">Fill out the form below and we&apos;ll get back to you</p>
                 
                 {submitted ? (
                   <div className="bg-green-50 rounded-2xl p-5 sm:p-8 text-center">
@@ -129,7 +129,7 @@ export default function ContactPage() {
                       <Check className="w-8 h-8 text-white" strokeWidth={3} />
                     </div>
                     <h3 className="text-xl font-bold text-green-700 mb-2">Message Sent!</h3>
-                    <p className="text-green-600">Thank you for reaching out. We'll get back to you shortly.</p>
+                    <p className="text-green-600">Thank you for reaching out. We&apos;ll get back to you shortly.</p>
                   </div>
                 ) : (
                   <form onSubmit={onSubmit} className="space-y-5">

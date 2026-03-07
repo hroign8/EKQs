@@ -1,12 +1,8 @@
 import {
   Crown,
-  Heart,
   Globe,
   Megaphone,
-  Mail,
-  Building2,
   Wine,
-  Plane,
   Shirt,
   Monitor,
   Landmark,
@@ -33,28 +29,39 @@ interface SponsorItem {
   description: string
   icon?: LucideIcon
   imageSrc?: string
+  imageClassName?: string
 }
 
 const platinumSponsors: SponsorItem[] = [
-  { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services. The app allows users to book rides, access food delivery, and utilize a wallet system, with features like FarasMiles cashback. It can be reached via toll-free number 0800 344 440 or through their website.', imageSrc: '/faras-logo.png' },
+  { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services.', imageSrc: '/faras_logo_gray-01.svg'},
   { name: 'Red Sea Beverages', description: 'Premium beverage company celebrating Eritrean heritage through quality products.', icon: Wine },
 ]
 
 const goldSponsors: SponsorItem[] = [
-  { name: 'Habesha Airlines', description: 'Connecting the Eritrean diaspora with affordable flights and cultural exchange.', icon: Plane },
+  { name: 'GrandHub Cafe and Halls', description: 'GoldenHub is a vibrant destination in Kabalagala Kampala, dedicated to great meals and exceptional cakes for every occasion. Blending warm café experiences with versatile event halls, GrandHub hosts celebrations, corporate gatherings, and memorable events of all sizes in a modern, welcoming setting.', imageSrc: '/grandhub_logo.svg', imageClassName: 'scale-150'}, 
   { name: 'Massawa Fashion House', description: 'Luxury fashion blending traditional Eritrean textiles with modern design.', icon: Shirt },
   { name: 'Keren Tech Solutions', description: 'Empowering African businesses through innovative digital solutions.', icon: Monitor },
 ]
 
 const silverSponsors: SponsorItem[] = [
+    { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services. The app allows users to book rides, access food delivery, and utilize a wallet system, with features like FarasMiles cashback. It can be reached via toll-free number 0800 344 440 or through their website.', imageSrc: '/faras_logo_gray-01.svg'},
+
   { name: 'Adulis Media', description: 'Amplifying Eritrean stories worldwide.', icon: Tv },
   { name: 'Nakfa Financial', description: 'Seamless remittance and banking for the diaspora.', icon: Landmark },
   { name: 'Sembel Catering', description: 'Traditional and fusion Eritrean cuisine.', icon: UtensilsCrossed },
   { name: 'Dahlak Events', description: 'Professional event management in Kampala.', icon: PartyPopper },
 ]
 
-const partners = [
-  { name: 'Eritrean Community Association', type: 'Community', icon: Heart },
+interface PartnerItem {
+  name: string
+  type: string
+  icon?: LucideIcon
+  imageSrc?: string
+  imageClassName?: string
+}
+
+const partners: PartnerItem[] = [
+  { name: 'East Africa International Medical Center', type: 'Healthcare', imageSrc: '/east_africa_logo.svg' },
   { name: 'UNESCO Cultural Heritage Fund', type: 'Cultural', icon: Globe },
   { name: 'East African Youth Foundation', type: 'Youth', icon: GraduationCap },
   { name: 'Kampala Convention Bureau', type: 'Venue', icon: MapPin },
@@ -68,14 +75,14 @@ function SponsorRow({ sponsor }: { sponsor: SponsorItem }) {
   const Icon = sponsor.icon
   return (
     <div className="flex items-start gap-4">
-      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-burgundy-50">
+      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border-2 border-burgundy-900">
         {sponsor.imageSrc ? (
           <Image
             src={sponsor.imageSrc}
             alt={sponsor.name}
             width={40}
             height={40}
-            className="w-10 h-10 object-cover rounded-full"
+            className={`w-10 h-10 object-cover rounded-full ${sponsor.imageClassName ?? ''}`}
           />
         ) : Icon ? (
           <Icon className="w-5 h-5 text-burgundy-900" />
@@ -114,7 +121,7 @@ export default function SponsorsPage() {
             {/* Gold */}
             <div className="mb-10">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">Gold</p>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid sm:grid-cols-2 gap-8">
                 {goldSponsors.map((s) => <SponsorRow key={s.name} sponsor={s} />)}
               </div>
             </div>
@@ -138,8 +145,18 @@ export default function SponsorsPage() {
                 const Icon = partner.icon
                 return (
                   <div key={partner.name} className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-gold-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-4 h-4 text-white" />
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border-2 border-burgundy-900">
+                      {partner.imageSrc ? (
+                        <Image
+                          src={partner.imageSrc}
+                          alt={partner.name}
+                          width={36}
+                          height={36}
+                          className={`w-9 h-9 object-cover rounded-full ${partner.imageClassName ?? ''}`}
+                        />
+                      ) : Icon ? (
+                        <Icon className="w-4 h-4 text-burgundy-900" />
+                      ) : null}
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-burgundy-900 text-sm leading-tight">{partner.name}</p>

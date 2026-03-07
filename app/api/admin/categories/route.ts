@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
-import { categorySchema } from '@/lib/validations'
+import { categorySchema, isValidObjectId } from '@/lib/validations'
 
 /**
  * GET /api/admin/categories
@@ -82,6 +82,9 @@ export async function PUT(request: Request) {
     if (!id) {
       return errorResponse('Category ID is required')
     }
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid category ID format', 400)
+    }
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return errorResponse('Category name is required')
     }
@@ -117,6 +120,9 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return errorResponse('Category ID is required')
+    }
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid category ID format', 400)
     }
 
     const existing = await prisma.votingCategory.findUnique({ where: { id } })

@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { isValidObjectId } from '@/lib/validations'
+import { createRateLimiter } from '@/lib/rate-limit'
+
+const limiter = createRateLimiter('notifications', 30, 60_000)
 
 // GET /api/notifications - Get user's notifications
 export async function GET(request: NextRequest) {
@@ -10,6 +13,12 @@ export async function GET(request: NextRequest) {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -47,6 +56,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const body = await request.json()
     const { id, markAllRead } = body
 
@@ -63,10 +78,13 @@ export async function PATCH(request: NextRequest) {
       if (!isValidObjectId(id)) {
         return NextResponse.json({ error: 'Invalid notification ID' }, { status: 400 })
       }
-      await prisma.notification.update({
+      const result = await prisma.notification.updateMany({
         where: { id, userId: session.user.id },
         data: { read: true },
       })
+      if (result.count === 0) {
+        return NextResponse.json({ error: 'Notification not found' }, { status: 404 })
+      }
       return NextResponse.json({ success: true })
     }
 

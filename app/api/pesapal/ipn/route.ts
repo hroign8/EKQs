@@ -38,12 +38,15 @@ export async function GET(request: NextRequest) {
     // Get transaction status from PesaPal
     const status = await getTransactionStatus(orderTrackingId)
 
-    // Idempotency: skip re-processing if transaction is already in a terminal state
+    console.warn(`[IPN] Received for ${orderTrackingId}: status_code=${status.status_code}, description=${status.payment_status_description}`)
+
+    // Idempotency: skip re-processing only for completed/failed/reversed — not 4 (pending/cancelled)
+    // so that a payment that was initially pending can still be reconciled if PesaPal retries the IPN.
     const existingTx = await prisma.pesapalTransaction.findUnique({
       where: { orderTrackingId },
       select: { statusCode: true },
     })
-    if (existingTx && ['1', '2', '3', '4'].includes(existingTx.statusCode || '')) {
+    if (existingTx && ['1', '2', '3'].includes(existingTx.statusCode || '')) {
       return NextResponse.json({
         orderNotificationType: 'IPNCHANGE',
         orderTrackingId,
@@ -52,14 +55,14 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Update transaction record
-    await prisma.pesapalTransaction.update({
+    // Update transaction record (use updateMany to avoid throwing if record is missing)
+    await prisma.pesapalTransaction.updateMany({
       where: { orderTrackingId },
       data: {
         status: status.payment_status_description,
         statusCode: String(status.status_code),
-        paymentMethod: status.payment_method,
-        pesapalTransactionId: status.confirmation_code,
+        paymentMethod: status.payment_method || undefined,
+        pesapalTransactionId: status.confirmation_code || undefined,
       },
     })
 
@@ -94,20 +97,23 @@ export async function GET(request: NextRequest) {
           },
         })
 
-        await prisma.vote.updateMany({
-          where: { transactionId: orderTrackingId },
+        const updated = await prisma.vote.updateMany({
+          where: { transactionId: orderTrackingId, verified: false },
           data: { verified: true },
         })
 
-        // Send confirmation emails
-        for (const vote of votes) {
-          void sendVoteConfirmationEmail(
-            vote.user.email,
-            vote.contestant.name,
-            vote.category.name,
-            vote.votesCount,
-            vote.amountPaid
-          )
+        // Only send emails if we actually verified new votes (prevents duplicates
+        // when both IPN and callback fire concurrently for the same transaction).
+        if (updated.count > 0) {
+          for (const vote of votes) {
+            void sendVoteConfirmationEmail(
+              vote.user.email,
+              vote.contestant.name,
+              vote.category.name,
+              vote.votesCount,
+              vote.amountPaid
+            )
+          }
         }
       } else if (transaction.transactionType === 'ticket') {
         // Mark ticket purchase as confirmed
@@ -117,8 +123,9 @@ export async function GET(request: NextRequest) {
         })
       }
     }
-    // Handle failed/reversed/cancelled ticket payments (status_code 2=failed, 3=reversed, 4=cancelled)
-    else if (status.status_code >= 2) {
+    // Handle failed/reversed/cancelled payments (status_code 2=failed, 3=reversed)
+    // We do NOT act on status_code 4 here — treat it as still-pending so a retry can verify it.
+    else if (status.status_code === 2 || status.status_code === 3) {
       const transaction = await prisma.pesapalTransaction.findUnique({
         where: { orderTrackingId },
       })
@@ -126,6 +133,11 @@ export async function GET(request: NextRequest) {
         await prisma.ticketPurchase.updateMany({
           where: { transactionId: orderTrackingId, status: 'pending' },
           data: { status: 'failed' },
+        })
+      } else if (transaction?.transactionType === 'vote') {
+        // Remove unverified vote records for failed/cancelled payments
+        await prisma.vote.deleteMany({
+          where: { transactionId: orderTrackingId, verified: false },
         })
       }
     }

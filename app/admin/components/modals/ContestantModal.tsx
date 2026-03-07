@@ -97,6 +97,7 @@ export default function ContestantModal({
 
             {formData.image ? (
               <div className="relative group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={formData.image}
                   alt="Preview"

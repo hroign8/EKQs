@@ -62,7 +62,7 @@ export default function GalleryPage() {
           </div>
         ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {filteredContestants.map((contestant, index) => (
+          {filteredContestants.map((contestant, _index) => (
             <Link key={contestant.id} href={`/contestants/${contestant.id}`}>
               <div className="group bg-white rounded-xl sm:rounded-2xl overflow-hidden hover:ring-2 hover:ring-gold-500 transition-all">
                 <div className="relative aspect-square overflow-hidden">

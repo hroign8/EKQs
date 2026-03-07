@@ -50,9 +50,9 @@ const TicketingPage: React.FC = () => {
       } catch {
         // Fallback to hardcoded tickets if API fails
         setTickets([
-          { id: '1', name: 'Table', price: 50, features: ['Premium front-row seating', 'Backstage access', 'Meet & greet with contestants', 'Exclusive gift bag', 'Priority entry', 'Complimentary drinks'], popular: true, icon: 'crown' },
-          { id: '2', name: 'VIP', price: 30, features: ['Reserved seating', 'Early entry', 'Event program', 'Commemorative badge', 'Refreshments included'], icon: 'star' },
-          { id: '3', name: 'General', price: 10, features: ['General admission', 'Event access', 'Standing area', 'Complimentary refreshments'], icon: 'ticket' },
+          { id: '1', name: 'Table', price: 555, features: ['Special Dinner', 'Premium Front-row Seating', '6 People Seater', 'Meet & Greet with Contestants', 'Exclusive Gift Bag', 'Priority Entry', 'Complimentary Drinks'], popular: true, icon: 'crown' },
+          { id: '2', name: 'VIP', price: 85, features: ['Dinner', 'Reserved seating', 'VIP Treatment', 'Early Entry', 'Event Program', 'Refreshments Included'], icon: 'star' },
+          { id: '3', name: 'General', price: 20, features: ['Event access', 'One Seat', 'Complimentary Refreshments'], icon: 'ticket' },
         ]);
       } finally {
         setLoading(false);

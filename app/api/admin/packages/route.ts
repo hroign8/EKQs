@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireAdmin, errorResponse } from '@/lib/api-utils'
-import { packageSchema } from '@/lib/validations'
+import { packageSchema, isValidObjectId } from '@/lib/validations'
 
 /**
  * GET /api/admin/packages
@@ -71,6 +71,9 @@ export async function PUT(request: Request) {
     if (!id || typeof id !== 'string') {
       return errorResponse('Package ID is required')
     }
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid package ID format', 400)
+    }
 
     const existing = await prisma.votingPackage.findUnique({ where: { id } })
     if (!existing) {
@@ -125,6 +128,9 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return errorResponse('Package ID is required')
+    }
+    if (!isValidObjectId(id)) {
+      return errorResponse('Invalid package ID format', 400)
     }
 
     const existing = await prisma.votingPackage.findUnique({ where: { id } })

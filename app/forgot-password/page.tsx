@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
             {!submitted ? (
               <>
                 <p className="text-gray-600 text-center mb-6">
-                  Enter your email and we'll send you a link to reset your password.
+                  Enter your email and we&apos;ll send you a link to reset your password.
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -112,11 +112,11 @@ export default function ForgotPasswordPage() {
                   <Check className="w-8 h-8 text-green-600" strokeWidth={3} />
                 </div>
                 <p className="text-gray-600 mb-2">
-                  We've sent a password reset link to
+                  We&apos;ve sent a password reset link to
                 </p>
                 <p className="font-semibold text-burgundy-900 mb-6">{email}</p>
                 <p className="text-sm text-gray-500 mb-8">
-                  Didn't receive the email? Check your spam folder or try again.
+                  Didn&apos;t receive the email? Check your spam folder or try again.
                 </p>
                 <div className="space-y-3">
                   <button 

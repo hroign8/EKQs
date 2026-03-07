@@ -4,18 +4,21 @@ import NextImage from 'next/image'
 import {
 
   Trophy, Users, BarChart3, Crown, ExternalLink,
-  Globe, QrCode, Mail, Ticket, Image as ImageIcon,
+  Globe, QrCode, Mail, Ticket, Image as ImageIcon, RefreshCw,
 } from 'lucide-react'
 import type { Contestant } from '@/types'
 import type { Category } from '../types'
-import { getVotes } from '../types'
+import { getVotes, getTotalVotes } from '../types'
 import { genderTitle } from '@/lib/utils'
 
+import { useState } from 'react'
+
 interface ResultsTabProps {
-  contestantsList: Contestant[]
+contestantsList: Contestant[]
   categoriesList: Category[]
   selectedCategory: string
   onSelectCategory: (slug: string) => void
+  onVerifyPending: () => Promise<void>
 }
 
 export default function ResultsTab({
@@ -23,7 +26,9 @@ export default function ResultsTab({
   categoriesList,
   selectedCategory,
   onSelectCategory,
+  onVerifyPending,
 }: ResultsTabProps) {
+  const [syncing, setSyncing] = useState(false)
   const getCategoryTotalVotes = (categorySlug: string) => {
     return contestantsList.reduce((sum, c) => sum + (getVotes(c)[categorySlug] || 0), 0)
   }
@@ -36,16 +41,37 @@ export default function ResultsTab({
 
   return (
     <div>
+      {/* Sync Payments Button */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={async () => { setSyncing(true); try { await onVerifyPending() } finally { setSyncing(false) } }}
+          disabled={syncing}
+          className="flex items-center gap-2 px-4 py-2 bg-burgundy-900 text-white rounded-lg hover:bg-burgundy-800 disabled:opacity-50 transition-colors text-sm font-medium"
+        >
+          <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+          {syncing ? 'Syncing Payments…' : 'Sync PesaPal Payments'}
+        </button>
+      </div>
       {/* Results Content */}
       <div className="mb-8">
         <div className="overflow-x-auto scroll-container mb-6 sm:mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="flex sm:flex-wrap sm:justify-center gap-2 sm:gap-3 min-w-max sm:min-w-0">
+            <button
+              onClick={() => onSelectCategory('all')}
+              className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 whitespace-nowrap ${
+                selectedCategory === 'all'
+                  ? 'bg-gold-500 text-burgundy-900 shadow-lg scale-105'
+                  : 'bg-white text-gray-700 border-2 border-gray-100 hover:border-gold-300 hover:text-gray-900'
+              }`}
+            >
+              All
+            </button>
             {categoriesList.map((category) => (
               <button
                 key={category.id}
                 onClick={() => onSelectCategory(category.slug || category.id)}
                 className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 whitespace-nowrap ${
-                  selectedCategory === category.id
+                  selectedCategory === (category.slug || category.id)
                     ? 'bg-gold-500 text-burgundy-900 shadow-lg scale-105'
                     : 'bg-white text-gray-700 border-2 border-gray-100 hover:border-gold-300 hover:text-gray-900'
                 }`}
@@ -59,18 +85,24 @@ export default function ResultsTab({
           <div className="bg-burgundy-900 px-4 sm:px-6 py-3 sm:py-4">
             <h2 className="text-base sm:text-xl font-bold text-white flex items-center gap-2 sm:gap-3">
               <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-gold-500" />
-              <span>{categoriesList.find(c => c.id === selectedCategory)?.name} Leaderboard</span>
+              <span>{selectedCategory === 'all' ? 'Overall' : categoriesList.find(c => (c.slug || c.id) === selectedCategory)?.name} Leaderboard</span>
             </h2>
           </div>
           <div>
             {contestantsList
               .slice()
-              .sort((a, b) => (getVotes(b)[selectedCategory] || 0) - (getVotes(a)[selectedCategory] || 0))
+              .sort((a, b) => {
+                const aVotes = selectedCategory === 'all' ? getTotalVotes(a) : (getVotes(a)[selectedCategory] || 0)
+                const bVotes = selectedCategory === 'all' ? getTotalVotes(b) : (getVotes(b)[selectedCategory] || 0)
+                return bVotes - aVotes
+              })
               .map((contestant, index) => {
-                const totalVotes = contestantsList.reduce((sum, c) => sum + (getVotes(c)[selectedCategory] || 0), 0)
-                const contestantVotes = getVotes(contestant)[selectedCategory] || 0
+                const getContestantVotes = (c: typeof contestant) =>
+                  selectedCategory === 'all' ? getTotalVotes(c) : (getVotes(c)[selectedCategory] || 0)
+                const totalVotes = contestantsList.reduce((sum, c) => sum + getContestantVotes(c), 0)
+                const contestantVotes = getContestantVotes(contestant)
                 const percentage = totalVotes ? ((contestantVotes / totalVotes) * 100).toFixed(1) : '0.0'
-                const maxVotes = Math.max(...contestantsList.map(c => getVotes(c)[selectedCategory] || 0))
+                const maxVotes = Math.max(...contestantsList.map(c => getContestantVotes(c)))
                 const barWidth = maxVotes ? (contestantVotes / maxVotes) * 100 : 0
 
                 return (

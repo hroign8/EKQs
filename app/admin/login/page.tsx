@@ -16,6 +16,10 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
+
   // If already logged in as admin, redirect to admin dashboard
   useEffect(() => {
     if (!sessionPending && session?.user) {
@@ -59,15 +63,7 @@ export default function AdminLoginPage() {
     }
   }
 
-  if (sessionPending) {
-    return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-burgundy-900" />
-      </main>
-    )
-  }
-
-  if (session?.user && isAdmin(session.user)) {
+  if (!mounted || sessionPending || (session?.user && isAdmin(session.user))) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-burgundy-900" />

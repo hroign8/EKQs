@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { Plus_Jakarta_Sans } from 'next/font/google'
 import { headers } from 'next/headers'
 import './globals.css'
 import Navigation from '@/components/Navigation'
@@ -13,6 +12,7 @@ const plusJakarta = Plus_Jakarta_Sans({
   preload: true,
   variable: '--font-plus-jakarta',
 })
+import { Analytics } from '@vercel/analytics/next'
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ek-qs.vercel.app'
 
@@ -82,11 +82,11 @@ export default async function RootLayout({
   // Read the nonce injected by middleware so Next.js stamps it on its own
   // inline bootstrap scripts. Any custom <Script> components should also
   // receive this nonce prop.
-  const nonce = (await headers()).get('x-nonce') ?? undefined
+  const _nonce = (await headers()).get('x-nonce') ?? undefined
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${plusJakarta.className} antialiased`} suppressHydrationWarning>
+      <body className="font-sans antialiased" suppressHydrationWarning>
         <ToastProvider>
           <Navigation />
           <div className="min-h-screen">
@@ -95,6 +95,7 @@ export default async function RootLayout({
           <Footer />
         </ToastProvider>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   )

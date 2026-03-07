@@ -38,8 +38,37 @@ const EXCHANGE_RATE_TTL = 10 * 60 * 1000
 const ZERO_DECIMAL_CURRENCIES = ['JPY', 'KRW', 'VND', 'IDR', 'UGX', 'NGN', 'KES']
 
 /**
- * Detects the user's local currency from their timezone, fetches exchange rates,
- * and returns `{ currency, formatPrice, loading }`.
+ * Resolves a currency code to its exchange rate and symbol, updating state.
+ * Reuses the module-level cache for exchange rates.
+ */
+async function applyRate(
+  code: string,
+  setter: (c: CurrencyInfo) => void,
+  isCancelled: () => boolean,
+) {
+  if (code === 'USD') {
+    if (!isCancelled()) setter({ code: 'USD', symbol: '$', rate: 1 })
+    return
+  }
+  if (!exchangeRateCache || Date.now() - exchangeRateCache.fetchedAt >= EXCHANGE_RATE_TTL) {
+    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
+    if (res.ok) {
+      const data = await res.json()
+      exchangeRateCache = { rates: data.rates ?? {}, fetchedAt: Date.now() }
+    }
+  }
+  if (!isCancelled() && exchangeRateCache) {
+    const rate = exchangeRateCache.rates[code] || 1
+    const symbol = currencySymbols[code] || code
+    setter({ code, symbol, rate })
+  }
+}
+
+/**
+ * Detects the user's currency in this priority order:
+ * 1. User's `preferredCurrency` saved in their profile (from /api/user/settings)
+ * 2. Browser timezone mapping
+ * 3. USD fall-back
  *
  * Prices stored in the DB are always in USD — this hook converts for display only.
  */
@@ -49,31 +78,24 @@ export function useCurrency() {
 
   useEffect(() => {
     let cancelled = false
+    const isCancelled = () => cancelled
 
     const detect = async () => {
       try {
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-        const detectedCode = timezoneToCurrency[timezone] || 'USD'
-
-        if (detectedCode === 'USD') {
-          if (!cancelled) setCurrency({ code: 'USD', symbol: '$', rate: 1 })
-          return
-        }
-
-        // Fetch / reuse cached rates
-        if (!exchangeRateCache || Date.now() - exchangeRateCache.fetchedAt >= EXCHANGE_RATE_TTL) {
-          const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
-          if (res.ok) {
-            const data = await res.json()
-            exchangeRateCache = { rates: data.rates ?? {}, fetchedAt: Date.now() }
+        // 1. Check user's saved preference from DB
+        const settingsRes = await fetch('/api/user/settings')
+        if (settingsRes.ok) {
+          const { preferredCurrency } = await settingsRes.json() as { preferredCurrency: string | null }
+          if (preferredCurrency) {
+            await applyRate(preferredCurrency, setCurrency, isCancelled)
+            return
           }
         }
 
-        if (!cancelled && exchangeRateCache) {
-          const rate = exchangeRateCache.rates[detectedCode] || 1
-          const symbol = currencySymbols[detectedCode] || detectedCode
-          setCurrency({ code: detectedCode, symbol, rate })
-        }
+        // 2. Fall back to timezone detection
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        const detectedCode = timezoneToCurrency[timezone] || 'USD'
+        await applyRate(detectedCode, setCurrency, isCancelled)
       } catch {
         // Silently fall back to USD
       } finally {
@@ -107,10 +129,24 @@ export function useApiData<T>(url: string, fallback: T) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setData(json)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch')
+    } finally {
+      setLoading(false)
+    }
+  }, [url])
+
   useEffect(() => {
     let cancelled = false
 
-    const fetchData = async () => {
+    const load = async () => {
       try {
         const res = await fetch(url)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -128,11 +164,11 @@ export function useApiData<T>(url: string, fallback: T) {
       }
     }
 
-    fetchData()
+    load()
     return () => { cancelled = true }
   }, [url])
 
-  return { data, loading, error, setData }
+  return { data, loading, error, setData, refetch: fetchData }
 }
 
 /**
@@ -148,6 +184,37 @@ export function useContestants() {
     ? result.data
     : (result.data as { contestants: Contestant[] }).contestants ?? []
   return { ...result, data: contestants }
+}
+
+/**
+ * Top contestant returned by /api/contestants/top.
+ */
+export interface TopContestant {
+  id: string
+  name: string
+  country: string
+  gender: string
+  image: string
+  totalVotes: number
+  position: number
+}
+
+/**
+ * Fetch the top contestants ranked by real-time verified vote totals.
+ * Re-fetches every 30 s so the homepage stays fresh.
+ */
+export function useTopContestants(limit = 3) {
+  const { data, loading, error, refetch } = useApiData<TopContestant[]>(
+    `/api/contestants/top?limit=${limit}`,
+    [],
+  )
+
+  useEffect(() => {
+    const interval = setInterval(refetch, 30_000)
+    return () => clearInterval(interval)
+  }, [refetch])
+
+  return { data, loading, error, refetch }
 }
 
 /**

@@ -5,25 +5,22 @@ import type { VoteLogEntry, VotingPackage, AdminTab } from '../types'
 
 interface RevenueTabProps {
   voteLogList: VoteLogEntry[]
+  voteLogTotal: number
+  voteLogStats: { verifiedCount: number; pendingCount: number; verifiedRevenue: number; pendingRevenue: number; totalVotesCount: number }
   packagesList: VotingPackage[]
   onSwitchTab: (tab: AdminTab) => void
 }
 
 export default function RevenueTab({
   voteLogList,
+  voteLogTotal,
+  voteLogStats,
   packagesList,
   onSwitchTab,
 }: RevenueTabProps) {
-  const calculateTotalRevenue = () =>
-    voteLogList.reduce((total, entry) => total + entry.amountPaid, 0)
-
-  const calculateTotalVotesSold = () =>
-    voteLogList.reduce((total, entry) => total + entry.votesCount, 0)
-
-  const getAverageTransactionValue = () => {
-    if (voteLogList.length === 0) return 0
-    return calculateTotalRevenue() / voteLogList.length
-  }
+  const totalRevenue = voteLogStats.verifiedRevenue + voteLogStats.pendingRevenue
+  const totalVotesSold = voteLogStats.totalVotesCount
+  const averageTransactionValue = voteLogTotal === 0 ? 0 : totalRevenue / voteLogTotal
 
   const getPackageSalesBreakdown = () => {
     const breakdown: Record<string, { count: number; revenue: number; votes: number }> = {}
@@ -48,7 +45,7 @@ export default function RevenueTab({
             <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
           </div>
           <div className="text-lg sm:text-2xl font-black text-emerald-600 truncate">
-            ${calculateTotalRevenue().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs sm:text-sm text-gray-500 mt-1">Total Revenue</div>
         </div>
@@ -57,7 +54,7 @@ export default function RevenueTab({
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
             <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
           </div>
-          <div className="text-lg sm:text-2xl font-black text-burgundy-900">{voteLogList.length}</div>
+          <div className="text-lg sm:text-2xl font-black text-burgundy-900">{voteLogTotal}</div>
           <div className="text-xs sm:text-sm text-gray-500 mt-1">Total Transactions</div>
         </div>
 
@@ -65,7 +62,7 @@ export default function RevenueTab({
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
             <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
           </div>
-          <div className="text-lg sm:text-2xl font-black text-burgundy-900">{calculateTotalVotesSold().toLocaleString()}</div>
+          <div className="text-lg sm:text-2xl font-black text-burgundy-900">{totalVotesSold.toLocaleString()}</div>
           <div className="text-xs sm:text-sm text-gray-500 mt-1">Votes Sold</div>
         </div>
 
@@ -74,7 +71,7 @@ export default function RevenueTab({
             <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-gold-600" />
           </div>
           <div className="text-lg sm:text-2xl font-black text-burgundy-900">
-            ${getAverageTransactionValue().toFixed(2)}
+            ${averageTransactionValue.toFixed(2)}
           </div>
           <div className="text-xs sm:text-sm text-gray-500 mt-1">Avg. Transaction</div>
         </div>
@@ -132,10 +129,10 @@ export default function RevenueTab({
                 <td className="px-6 py-4 font-bold text-burgundy-900">TOTAL</td>
                 <td className="px-6 py-4"></td>
                 <td className="px-6 py-4"></td>
-                <td className="px-6 py-4 text-right font-bold text-burgundy-900">{voteLogList.length}</td>
-                <td className="px-6 py-4 text-right font-bold text-burgundy-900">{calculateTotalVotesSold().toLocaleString()}</td>
+                <td className="px-6 py-4 text-right font-bold text-burgundy-900">{voteLogTotal}</td>
+                <td className="px-6 py-4 text-right font-bold text-burgundy-900">{totalVotesSold.toLocaleString()}</td>
                 <td className="px-6 py-4 text-right font-black text-emerald-600 text-lg">
-                  ${calculateTotalRevenue().toFixed(2)}
+                  ${totalRevenue.toFixed(2)}
                 </td>
               </tr>
             </tfoot>

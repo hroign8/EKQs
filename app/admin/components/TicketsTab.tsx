@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Edit, Trash2, EyeOff, Eye, Ticket, Crown, Star, DollarSign, Users, TrendingUp, RefreshCw, Clock, BadgeCheck, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, EyeOff, Eye, Ticket, Crown, Star, DollarSign, Users, RefreshCw, Clock, BadgeCheck, XCircle } from 'lucide-react'
 import type { AdminTicketType, TicketPurchaseEntry } from '../types'
 
 interface TicketsTabProps {
@@ -24,6 +24,7 @@ const STATUS_BADGES: Record<string, { bg: string; text: string; Icon: typeof Bad
   confirmed: { bg: 'bg-green-50', text: 'text-green-700', Icon: BadgeCheck },
   pending: { bg: 'bg-yellow-50', text: 'text-yellow-700', Icon: Clock },
   failed: { bg: 'bg-red-50', text: 'text-red-700', Icon: XCircle },
+  expired: { bg: 'bg-gray-50', text: 'text-gray-500', Icon: Clock },
 }
 
 export default function TicketsTab({

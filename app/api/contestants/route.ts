@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { createRateLimiter } from '@/lib/rate-limit'
 
-// Cache at the Next.js route layer: revalidate every 60 s.
-// Combined with the Cache-Control header below this means Vercel's Edge Network
-// serves cached HTML/JSON for up to 60 s before re-fetching from the DB.
-export const revalidate = 60
+const limiter = createRateLimiter('contestants', 60, 60_000)
+
+// Dynamic route (reads request) — no ISR caching.
 
 /**
  * GET /api/contestants
@@ -18,6 +18,12 @@ export async function GET(request: Request) {
   const skip = (page - 1) * limit
 
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'anonymous'
+    const check = await limiter.check(ip)
+    if (!check.allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const [contestants, total] = await Promise.all([
       prisma.contestant.findMany({
         where: { isActive: true },
@@ -76,9 +82,8 @@ export async function GET(request: Request) {
       limit,
       totalPages: Math.ceil(total / limit),
     })
-    // Tell the CDN to serve this for 60 s, and keep a stale copy available
-    // for up to 5 min while a fresh one is fetched in the background.
-    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    // Short CDN cache so "Live Standings" stays reasonably fresh.
+    response.headers.set('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=15')
     return response
   } catch (error) {
     console.error('Failed to fetch contestants:', error)
