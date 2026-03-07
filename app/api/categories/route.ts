@@ -4,8 +4,8 @@ import { createRateLimiter } from '@/lib/rate-limit'
 
 const limiter = createRateLimiter('categories', 60, 60_000)
 
-// Categories change very rarely — cache for 5 minutes.
-export const revalidate = 300
+// This route reads request.headers (for rate-limiting), so it must be dynamic.
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/categories
