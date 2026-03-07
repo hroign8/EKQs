@@ -36,29 +36,27 @@ export async function GET(request: NextRequest) {
       where.verified = verified === 'true'
     }
 
-    // Run count + stats first (lightweight indexed queries), then paginated data
+    // Run stats and paginated votes in a single parallel batch
     const verifiedWhere = { ...where, verified: true }
     const pendingWhere = { ...where, verified: false }
 
-    const [total, verifiedCount, pendingCount, verifiedAgg, pendingAgg] = await Promise.all([
+    const [total, verifiedAgg, pendingAgg, rawVotes] = await Promise.all([
       prisma.vote.count({ where }),
-      prisma.vote.count({ where: verifiedWhere }),
-      prisma.vote.count({ where: pendingWhere }),
-      prisma.vote.aggregate({ where: verifiedWhere, _sum: { amountPaid: true, votesCount: true } }),
-      prisma.vote.aggregate({ where: pendingWhere, _sum: { amountPaid: true, votesCount: true } }),
+      prisma.vote.aggregate({ where: verifiedWhere, _count: { _all: true }, _sum: { amountPaid: true, votesCount: true } }),
+      prisma.vote.aggregate({ where: pendingWhere, _count: { _all: true }, _sum: { amountPaid: true, votesCount: true } }),
+      prisma.vote.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
     ])
 
+    const verifiedCount = verifiedAgg._count._all
+    const pendingCount = pendingAgg._count._all
     const verifiedRevenue = verifiedAgg._sum.amountPaid ?? 0
     const pendingRevenue = pendingAgg._sum.amountPaid ?? 0
     const totalVotesCount = (verifiedAgg._sum.votesCount ?? 0) + (pendingAgg._sum.votesCount ?? 0)
-
-    // Paginated vote list — fetch without include to avoid failures from orphaned relations
-    const rawVotes = await prisma.vote.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit,
-    })
 
     // Batch-load related records so missing ones return null instead of crashing
     const contestantIds = [...new Set(rawVotes.map(v => v.contestantId))]
