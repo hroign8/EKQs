@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       where.verified = verified === 'true'
     }
 
-    const [votes, total, allVotes] = await Promise.all([
+    const [votes, total, statsGroups] = await Promise.all([
       prisma.vote.findMany({
         where,
         include: {
@@ -50,17 +50,21 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.vote.count({ where }),
-      prisma.vote.findMany({
+      prisma.vote.groupBy({
+        by: ['verified'],
         where,
-        select: { verified: true, amountPaid: true, votesCount: true },
+        _count: { _all: true },
+        _sum: { amountPaid: true, votesCount: true },
       }),
     ])
 
-    const verifiedCount = allVotes.filter(v => v.verified).length
-    const pendingCount = allVotes.length - verifiedCount
-    const verifiedRevenue = allVotes.filter(v => v.verified).reduce((s, v) => s + (v.amountPaid || 0), 0)
-    const pendingRevenue = allVotes.filter(v => !v.verified).reduce((s, v) => s + (v.amountPaid || 0), 0)
-    const totalVotesCount = allVotes.reduce((s, v) => s + (v.votesCount || 1), 0)
+    const verifiedGroup = statsGroups.find(g => g.verified === true)
+    const pendingGroup = statsGroups.find(g => g.verified === false)
+    const verifiedCount = verifiedGroup?._count._all ?? 0
+    const pendingCount = pendingGroup?._count._all ?? 0
+    const verifiedRevenue = verifiedGroup?._sum.amountPaid ?? 0
+    const pendingRevenue = pendingGroup?._sum.amountPaid ?? 0
+    const totalVotesCount = (verifiedGroup?._sum.votesCount ?? 0) + (pendingGroup?._sum.votesCount ?? 0)
 
     return NextResponse.json({
       votes: votes.map((v: { id: string; createdAt: Date; user: { email: string; name: string | null }; contestant: { name: string }; category: { name: string }; package: { name: string }; votesCount: number; amountPaid: number; verified: boolean; country?: string | null }) => ({

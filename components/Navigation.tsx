@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Menu, X, User } from 'lucide-react'
 import { useSession, signOut } from '@/lib/auth-client'
 import { useNotifications } from '@/lib/useNotifications'
@@ -26,6 +26,9 @@ export default function Navigation() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(session?.user?.id)
 
@@ -87,7 +90,7 @@ export default function Navigation() {
               Get Tickets
             </Link>
 
-            {!isPending && session?.user ? (
+            {mounted && !isPending && session?.user ? (
               <div className="flex items-center gap-3">
                 <div className="w-px h-6 bg-white/10" />
                 <NotificationBell
@@ -127,7 +130,7 @@ export default function Navigation() {
         open={mobileMenuOpen}
         navLinks={NAV_LINKS}
         pathname={pathname}
-        user={session?.user as Parameters<typeof MobileMenu>[0]['user']}
+        user={mounted ? session?.user as Parameters<typeof MobileMenu>[0]['user'] : undefined}
         onClose={() => setMobileMenuOpen(false)}
         onSignOut={handleSignOut}
       />

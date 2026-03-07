@@ -146,7 +146,7 @@ export default function Footer() {
 
       <div className="border-t border-burgundy-800">
         <div className="container mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-burgundy-300 text-sm text-center sm:text-left">
-          <p>© {new Date().getFullYear()} Eritrean Kings & Queens. All rights reserved.</p>
+          <p suppressHydrationWarning>© {new Date().getFullYear()} Eritrean Kings & Queens. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link href="/privacy-policy" className="hover:text-gold-500 transition-colors">Privacy Policy</Link>
             <span className="text-burgundy-700">|</span>
