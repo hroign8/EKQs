@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { Menu, X, User } from 'lucide-react'
 import { useSession, signOut } from '@/lib/auth-client'
 import { useNotifications } from '@/lib/useNotifications'
@@ -26,9 +26,7 @@ export default function Navigation() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => setMounted(true), [])
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
 
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(session?.user?.id)
 
