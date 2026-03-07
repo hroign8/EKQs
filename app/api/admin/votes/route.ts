@@ -18,10 +18,11 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)))
     const contestantId = searchParams.get('contestantId')
     const categoryId = searchParams.get('categoryId')
     const verified = searchParams.get('verified')
+    const includeStats = searchParams.get('stats') !== 'false' && page === 1
 
     const where: Record<string, unknown> = {}
     if (contestantId) {
@@ -36,27 +37,29 @@ export async function GET(request: NextRequest) {
       where.verified = verified === 'true'
     }
 
-    // Run stats and paginated votes in a single parallel batch
+    // Only compute stats on page 1 to keep subsequent pages fast
     const verifiedWhere = { ...where, verified: true }
     const pendingWhere = { ...where, verified: false }
 
-    const [total, verifiedAgg, pendingAgg, rawVotes] = await Promise.all([
+    const [total, rawVotes, verifiedAgg, pendingAgg] = await Promise.all([
       prisma.vote.count({ where }),
-      prisma.vote.aggregate({ where: verifiedWhere, _count: { _all: true }, _sum: { amountPaid: true, votesCount: true } }),
-      prisma.vote.aggregate({ where: pendingWhere, _count: { _all: true }, _sum: { amountPaid: true, votesCount: true } }),
       prisma.vote.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
+      ...(includeStats ? [
+        prisma.vote.aggregate({ where: verifiedWhere, _count: { _all: true }, _sum: { amountPaid: true, votesCount: true } }),
+        prisma.vote.aggregate({ where: pendingWhere, _count: { _all: true }, _sum: { amountPaid: true, votesCount: true } }),
+      ] : []),
     ])
 
-    const verifiedCount = verifiedAgg._count._all
-    const pendingCount = pendingAgg._count._all
-    const verifiedRevenue = verifiedAgg._sum.amountPaid ?? 0
-    const pendingRevenue = pendingAgg._sum.amountPaid ?? 0
-    const totalVotesCount = (verifiedAgg._sum.votesCount ?? 0) + (pendingAgg._sum.votesCount ?? 0)
+    const verifiedCount = verifiedAgg?._count?._all ?? 0
+    const pendingCount = pendingAgg?._count?._all ?? 0
+    const verifiedRevenue = verifiedAgg?._sum?.amountPaid ?? 0
+    const pendingRevenue = pendingAgg?._sum?.amountPaid ?? 0
+    const totalVotesCount = (verifiedAgg?._sum?.votesCount ?? 0) + (pendingAgg?._sum?.votesCount ?? 0)
 
     // Batch-load related records so missing ones return null instead of crashing
     const contestantIds = [...new Set(rawVotes.map(v => v.contestantId))]

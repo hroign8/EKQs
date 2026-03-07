@@ -121,13 +121,18 @@ export function useAdminData() {
   const fetchAdminData = useCallback(async () => {
     setDataLoading(true)
     try {
-      const [contestantsRes, categoriesRes, packagesRes, votesRes, overviewRes, eventRes, usersRes, ticketsRes] = await Promise.all([
+      // Batch 1: lightweight endpoints that respond quickly
+      const [contestantsRes, categoriesRes, packagesRes, eventRes] = await Promise.all([
         fetch('/api/admin/contestants'),
         fetch('/api/admin/categories'),
         fetch('/api/admin/packages'),
+        fetch('/api/admin/event'),
+      ])
+
+      // Batch 2: heavier endpoints (votes, overview hit the vote table)
+      const [votesRes, overviewRes, usersRes, ticketsRes] = await Promise.all([
         fetch('/api/admin/votes'),
         fetch('/api/admin/overview'),
-        fetch('/api/admin/event'),
         fetch('/api/admin/users'),
         fetch('/api/admin/tickets'),
       ])
