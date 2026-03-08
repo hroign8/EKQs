@@ -14,10 +14,10 @@ import { sendVoteConfirmationEmail } from '@/lib/email'
  * Called by Vercel Cron every 5 minutes.
  */
 export async function GET(request: NextRequest) {
-  // Verify cron secret to prevent unauthorized access
+  // Verify cron secret to prevent unauthorized access — fail closed if unset
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

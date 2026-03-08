@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   TrendingUp, Users, Trophy, BarChart3,
@@ -40,20 +40,20 @@ export default function AdminPage() {
   const router = useRouter()
 
   // ---------------------------------------------------------------------------
-  // Auth guards
+  // Auth guards — redirects MUST happen in useEffect, not during render.
+  // Calling router.push() during render violates React rules and can cause
+  // redirect loops or silent failures.
   // ---------------------------------------------------------------------------
-  if (admin.sessionPending) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-burgundy-900" />
-      </div>
-    )
-  }
+  const needsLogin = !admin.sessionPending && !admin.session?.user
+  const notAdmin = !admin.sessionPending && admin.session?.user && !isAdmin(admin.session.user)
 
-  if (!admin.session?.user) {
-    if (typeof window !== 'undefined') {
-      router.push('/admin/login')
+  useEffect(() => {
+    if (needsLogin) {
+      router.replace('/admin/login')
     }
+  }, [needsLogin, router])
+
+  if (admin.sessionPending || needsLogin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-burgundy-900" />
@@ -61,7 +61,7 @@ export default function AdminPage() {
     )
   }
 
-  if (!isAdmin(admin.session.user)) {
+  if (notAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">

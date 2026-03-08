@@ -38,9 +38,18 @@ export default function AdminLoginPage() {
     setError('')
     setLoading(true)
     try {
-      const result = await signIn.email({ email, password })
+      // Timeout prevents infinite spinner when the server is slow to respond
+      const signInPromise = signIn.email({ email, password })
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. The server may be starting up — please try again.')), 20_000)
+      )
+      const result = await Promise.race([signInPromise, timeoutPromise])
       if (result.error) {
-        setError(result.error.message || 'Invalid credentials.')
+        if (result.error.code === 'EMAIL_NOT_VERIFIED') {
+          setError('Please verify your email before signing in.')
+        } else {
+          setError(result.error.message || 'Invalid credentials.')
+        }
       } else {
         // Verify the user has admin role before allowing access
         const sessionRes = await fetch('/api/auth/get-session')
@@ -53,11 +62,12 @@ export default function AdminLoginPage() {
             return
           }
         }
-        router.push('/admin')
+        // Use replace so the login page isn't in the back-button history
+        router.replace('/admin')
         router.refresh()
       }
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }

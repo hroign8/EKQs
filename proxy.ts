@@ -34,9 +34,10 @@ export async function proxy(request: NextRequest) {
         process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
       ].filter(Boolean) as string[]
 
-      // In development, also allow localhost origins
-      const isLocalhost = origin.startsWith('http://localhost')
-      if (!isLocalhost && allowed.length > 0 && !allowed.includes(origin)) {
+      // In development, also allow the dev server origin
+      const isDev = process.env.NODE_ENV !== 'production'
+      const isDevOrigin = isDev && /^http:\/\/localhost:\d{1,5}$/.test(origin)
+      if (!isDevOrigin && allowed.length > 0 && !allowed.includes(origin)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
     }

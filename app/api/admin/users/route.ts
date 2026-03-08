@@ -57,6 +57,14 @@ export async function PATCH(request: Request) {
       return errorResponse('You cannot ban your own account', 400)
     }
 
+    // Prevent admin from banning other admins
+    if (banned) {
+      const target = await prisma.user.findUnique({ where: { id }, select: { role: true } })
+      if (target?.role === 'admin') {
+        return errorResponse('Cannot ban another admin account', 403)
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id },
       data: {
