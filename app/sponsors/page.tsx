@@ -6,7 +6,6 @@ import {
   Monitor,
   Landmark,
   UtensilsCrossed,
-  PartyPopper,
   Tv,
   Users,
   GraduationCap,
@@ -72,14 +71,14 @@ function SponsorRow({ sponsor }: { sponsor: SponsorItem }) {
   const Icon = sponsor.icon
   return (
     <div className="flex items-start gap-4">
-      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border-2 border-burgundy-900">
+      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border-2 border-burgundy-900 p-1">
         {sponsor.imageSrc ? (
           <Image
             src={sponsor.imageSrc}
             alt={sponsor.name}
             width={40}
             height={40}
-            className={`w-10 h-10 object-cover rounded-full ${sponsor.imageClassName ?? ''}`}
+            className={`w-full h-full object-contain ${sponsor.imageClassName ?? ''}`}
           />
         ) : Icon ? (
           <Icon className="w-5 h-5 text-burgundy-900" />
@@ -108,7 +107,7 @@ export default function SponsorsPage() {
             {/* Platinum */}
             <div className="mb-10">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">Platinum</p>
-              <div className="grid sm:grid-cols-2 gap-8">
+              <div className="space-y-8">
                 {platinumSponsors.map((s) => <SponsorRow key={s.name} sponsor={s} />)}
               </div>
             </div>
