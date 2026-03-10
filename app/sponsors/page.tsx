@@ -2,7 +2,6 @@ import {
   Crown,
   Globe,
   Megaphone,
-  Wine,
   Shirt,
   Monitor,
   Landmark,
@@ -33,8 +32,7 @@ interface SponsorItem {
 }
 
 const platinumSponsors: SponsorItem[] = [
-  { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services.', imageSrc: '/faras_logo_gray-01.svg'},
-  { name: 'Red Sea Beverages', description: 'Premium beverage company celebrating Eritrean heritage through quality products.', icon: Wine },
+  { name: 'Virah Forex Bureau Uganda Limited', description: 'We are a trusted financial services provider offering foreign currency exchange and international money transfers through Western Union, MoneyGram, and Ria, along with Mobile Money, Airtel Money, and agency banking services. Customers can conveniently access our services at our Kansanga branch (UK Mall) and Bunga branch (Ivory Mall) in Kampala.', imageSrc: '/val-logo.svg'},
 ]
 
 const goldSponsors: SponsorItem[] = [
