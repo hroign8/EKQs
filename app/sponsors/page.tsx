@@ -47,7 +47,6 @@ const silverSponsors: SponsorItem[] = [
   { name: 'Adulis Media', description: 'Amplifying Eritrean stories worldwide.', icon: Tv },
   { name: 'Nakfa Financial', description: 'Seamless remittance and banking for the diaspora.', icon: Landmark },
   { name: 'Sembel Catering', description: 'Traditional and fusion Eritrean cuisine.', icon: UtensilsCrossed },
-  { name: 'Dahlak Events', description: 'Professional event management in Kampala.', icon: PartyPopper },
 ]
 
 interface PartnerItem {
