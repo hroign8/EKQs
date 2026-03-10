@@ -36,7 +36,7 @@ const platinumSponsors: SponsorItem[] = [
 
 const goldSponsors: SponsorItem[] = [
   { name: 'GrandHub Cafe and Halls', description: 'GoldenHub is a vibrant destination in Kabalagala Kampala, dedicated to great meals and exceptional cakes for every occasion. Blending warm café experiences with versatile event halls, GrandHub hosts celebrations, corporate gatherings, and memorable events of all sizes in a modern, welcoming setting.', imageSrc: '/grandhub_logo.svg', imageClassName: 'scale-150'}, 
-  { name: 'Massawa Fashion House', description: 'Luxury fashion blending traditional Eritrean textiles with modern design.', icon: Shirt },
+  { name: 'Massawa Fashion', description: 'Luxury fashion blending traditional Eritrean textiles with modern design.', icon: Shirt },
   { name: 'Keren Tech Solutions', description: 'Empowering African businesses through innovative digital solutions.', icon: Monitor },
 ]
 
