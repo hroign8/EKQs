@@ -31,7 +31,7 @@ interface SponsorItem {
 }
 
 const platinumSponsors: SponsorItem[] = [
-  { name: 'Virah Forex Bureau Uganda Limited', description: 'We are a trusted financial services provider offering foreign currency exchange and international money transfers through Western Union, MoneyGram, and Ria, along with Mobile Money, Airtel Money, and agency banking services. Customers can conveniently access our services at our Kansanga branch (UK Mall) and Bunga branch (Ivory Mall) in Kampala.', imageSrc: '/val-logo.svg'},
+  { name: 'Virah Forex Bureau Uganda Limited', description: 'We are a trusted financial services provider offering foreign currency exchange and international money transfers through Western Union, MoneyGram, and Ria, along with Mobile Money, Airtel Money, and agency banking services. Customers can conveniently access our services at our Kansanga branch (UK Mall) and Bunga branch (Ivory Mall) in Kampala.', imageSrc: '/Val-logo.svg'},
 ]
 
 const goldSponsors: SponsorItem[] = [
