@@ -16,3 +16,4 @@ out/
 
 # Misc
 pg_hba.conf.save
+.vercel
