@@ -9,7 +9,8 @@
     "**/.next/**": true,
     "**/node_modules/**": true,
     "**/.git/**": true,
-    "**/public/uploads/**": true
+    "**/public/uploads/**": true,
+    "**/.prisma/**": true
   },
   "files.exclude": {
     "**/.next": true,
@@ -17,11 +18,12 @@
   },
   "search.exclude": {
     "**/.next/**": true,
-    "**/node_modules/**": true
+    "**/node_modules/**": true,
+    "**/.prisma/**": true
   },
 
   // Limit TypeScript server memory to avoid OOM crashes (8 GB system)
-  "typescript.tsserver.maxTsServerMemory": 1536,
+  "typescript.tsserver.maxTsServerMemory": 1024,
   "typescript.disableAutomaticTypeAcquisition": true,
   // Reduce TS background work
   "typescript.tsserver.watchOptions": {
@@ -29,11 +31,11 @@
     "watchDirectory": "useFsEvents"
   },
 
-  // ESLint: only run on save, not on every keystroke (saves ~500MB RAM)
+  // ESLint: only run on save, not on every keystroke
   "eslint.run": "onSave",
 
-  // Prevent terminal from buffering excessive output (avoids crash on large build logs)
-  "terminal.integrated.scrollback": 1000,
+  // Prevent terminal from buffering excessive output
+  "terminal.integrated.scrollback": 500,
   "terminal.integrated.env.osx": {
     "NODE_OPTIONS": "--max-old-space-size=2048"
   },
@@ -46,9 +48,20 @@
     "comments": false,
     "strings": false
   },
-  // Disable minimap to reduce rendering memory
   "editor.minimap.enabled": false,
-  // Reduce open editor memory
   "workbench.editor.limit.enabled": true,
-  "workbench.editor.limit.value": 5
+  "workbench.editor.limit.value": 5,
+
+  // Disable heavy features to save memory
+  "editor.bracketPairColorization.enabled": false,
+  "editor.stickyScroll.enabled": false,
+  "editor.linkedEditing": false,
+  "editor.codeLens": false,
+  "git.autorefresh": false,
+  "git.autofetch": false,
+
+  // Disable extensions not needed for this Next.js project
+  "go.disableIntellisense": true,
+  "python.analysis.autoSearchPaths": false,
+  "snyk.yesBackgroundOssNotification": false
 }

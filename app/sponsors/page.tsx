@@ -2,11 +2,9 @@ import {
   Crown,
   Globe,
   Megaphone,
-  Shirt,
   Monitor,
   Landmark,
   UtensilsCrossed,
-  Tv,
   Users,
   GraduationCap,
   MapPin,
@@ -35,15 +33,14 @@ const platinumSponsors: SponsorItem[] = [
 ]
 
 const goldSponsors: SponsorItem[] = [
-  { name: 'GrandHub Cafe and Halls', description: 'GoldenHub is a vibrant destination in Kabalagala Kampala, dedicated to great meals and exceptional cakes for every occasion. Blending warm café experiences with versatile event halls, GrandHub hosts celebrations, corporate gatherings, and memorable events of all sizes in a modern, welcoming setting.', imageSrc: '/grandhub_logo.svg', imageClassName: 'scale-150'}, 
+  { name: 'Grand Hub Cafe and Halls', description: 'Grand Hub is a vibrant destination in Kabalagala Kampala, dedicated to great meals and exceptional cakes for every occasion. Blending warm café experiences with versatile event halls, GrandHub hosts celebrations, corporate gatherings, and memorable events of all sizes in a modern, welcoming setting.', imageSrc: '/grandhub_logo.svg', imageClassName: 'scale-150'}, 
   { name: 'ERT Afro Fashion Design', description: 'Luxury fashion blending traditional Eritrean textiles with modern design.', imageSrc: '/fashion_logo.svg' },
   { name: 'Keren Tech Solutions', description: 'Empowering African businesses through innovative digital solutions.', icon: Monitor },
 ]
 
 const silverSponsors: SponsorItem[] = [
-    { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services. The app allows users to book rides, access food delivery, and utilize a wallet system, with features like FarasMiles cashback. It can be reached via toll-free number 0800 344 440 or through their website.', imageSrc: '/faras_logo_gray-01.svg'},
-
-  { name: 'Adulis Media', description: 'Amplifying Eritrean stories worldwide.', icon: Tv },
+  { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services. The app allows users to book rides, access food delivery, and utilize a wallet system, with features like FarasMiles cashback. It can be reached via toll-free number 0800 344 440 or through their website.', imageSrc: '/faras_logo_gray-01.svg'},
+  { name: 'Micky Desigens', description: 'Micky Designs is a distinguished fashion house founded by the visionary Mickydad Kaaku. We specialize in crafting glamorous gowns and captivating designs that are sure to turn heads. Withan unwavering commitment to excellence, we curate new collections annually, and our presence is felt at more than 30 fashion events both domestically and internationally. Our dedicated team comprises young artisans and tailors who work tirelessly to bring our creative visions to life. Micky Designs has proudly collaborated with the most prominent names in the fashion, film, and entertainmentindustries across the country. We harbor a fervent belief that ourpassion and dedication will one day propel us to make a global impact.', imageSrc: '/mickyz_designs_logo.svg', imageClassName: 'scale-150' },
   { name: 'Nakfa Financial', description: 'Seamless remittance and banking for the diaspora.', icon: Landmark },
   { name: 'Sembel Catering', description: 'Traditional and fusion Eritrean cuisine.', icon: UtensilsCrossed },
 ]
