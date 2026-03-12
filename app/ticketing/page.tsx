@@ -26,6 +26,7 @@ const TicketingPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [quantityDisplay, setQuantityDisplay] = useState('1');
   const [total, setTotal] = useState(0);
   const [purchasing, setPurchasing] = useState(false);
   const [error, setError] = useState('');
@@ -68,10 +69,27 @@ const TicketingPage: React.FC = () => {
   };
 
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const qty = Math.max(1, parseInt(e.target.value, 10) || 1);
-    setQuantity(qty);
-    if (selectedTicket) {
-      setTotal(selectedTicket.price * qty);
+    const val = e.target.value;
+    setQuantityDisplay(val);
+    const parsed = parseInt(val, 10);
+    if (!isNaN(parsed) && parsed >= 1) {
+      setQuantity(parsed);
+      if (selectedTicket) {
+        setTotal(selectedTicket.price * parsed);
+      }
+    }
+  };
+
+  const handleQuantityBlur = () => {
+    const parsed = parseInt(quantityDisplay, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setQuantity(1);
+      setQuantityDisplay('1');
+      if (selectedTicket) {
+        setTotal(selectedTicket.price * 1);
+      }
+    } else {
+      setQuantityDisplay(String(parsed));
     }
   };
 
@@ -114,6 +132,7 @@ const TicketingPage: React.FC = () => {
       setError('');
       setSelectedTicket(null);
       setQuantity(1);
+      setQuantityDisplay('1');
       setTotal(0);
     } catch {
       setError('Something went wrong. Please try again.');
@@ -265,8 +284,9 @@ const TicketingPage: React.FC = () => {
                   type="number"
                   min="1"
                   max="10"
-                  value={quantity}
+                  value={quantityDisplay}
                   onChange={handleQuantityChange}
+                  onBlur={handleQuantityBlur}
                   className="w-full bg-gray-50 px-4 py-3 rounded-xl text-xl font-bold text-burgundy-900 text-center focus:ring-2 focus:ring-gold-500 focus:outline-none transition-all"
                 />
               </div>

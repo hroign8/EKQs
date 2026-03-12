@@ -174,7 +174,14 @@ export function useAdminData() {
         if (data.stats) setVoteLogStats(data.stats)
       }
       if (overviewRes.ok) {
-        setOverviewData(await overviewRes.json())
+        const overviewJson = await overviewRes.json()
+        setOverviewData({
+          totalContestants: overviewJson.contestants || 0,
+          totalVotes: overviewJson.totalVotes || 0,
+          totalRevenue: overviewJson.totalRevenue || 0,
+          totalTickets: overviewJson.ticketsSold || 0,
+          recentMessages: overviewJson.unreadMessages || 0,
+        })
       }
       if (usersRes.ok) {
         setUsersList(await usersRes.json())

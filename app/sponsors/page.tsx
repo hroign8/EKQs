@@ -2,7 +2,6 @@ import {
   Crown,
   Globe,
   Megaphone,
-  Monitor,
   Landmark,
   UtensilsCrossed,
   Users,
