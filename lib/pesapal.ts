@@ -226,7 +226,7 @@ export async function getTransactionStatus(orderTrackingId: string): Promise<Pes
 
   const apiUrl = getPesapalApiUrl()
   const response = await fetch(
-    `${apiUrl}/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
+    `${apiUrl}/api/Transactions/GetTransactionStatus?orderTrackingId=${encodeURIComponent(orderTrackingId)}`,
     {
       method: 'GET',
       headers: {
@@ -254,6 +254,17 @@ export async function getTransactionStatus(orderTrackingId: string): Promise<Pes
   const raw = data.status_code ?? data.payment_status_code ?? data.statusCode
   const parsed = Number(raw)
   data.status_code = Number.isFinite(parsed) ? parsed : 0
+
+  // Fallback: if the numeric status resolved to 0 (Invalid / unknown), infer
+  // the real status from the textual payment_status_description. This covers
+  // API version mismatches where the numeric field is missing or empty but the
+  // description string is present and accurate.
+  if (data.status_code === 0 && data.payment_status_description) {
+    const desc = String(data.payment_status_description).toLowerCase().trim()
+    if (desc === 'completed' || desc === 'complete') data.status_code = 1
+    else if (desc === 'failed' || desc === 'fail') data.status_code = 2
+    else if (desc === 'reversed' || desc === 'reversal') data.status_code = 3
+  }
 
   return data as PesapalTransactionStatus
 }

@@ -41,15 +41,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/vote?payment=error', request.url))
     }
 
-    // Retry up to 4 times if payment is still pending (status_code 0).
+    // Retry up to 4 times if payment is not yet in a terminal state.
     // Mobile-money payments often finalise several seconds after the redirect.
+    // Terminal states: 1=completed, 2=failed, 3=reversed.
     // Total wait ≤ 4×3s = 12s, well within the 25s function timeout.
+    const isTerminal = (code: number) => code === 1 || code === 2 || code === 3
     let status = await getTransactionStatus(orderTrackingId)
-    if (status.status_code === 0) {
+    if (!isTerminal(status.status_code)) {
       for (let attempt = 0; attempt < 4; attempt++) {
         await sleep(3000)
         status = await getTransactionStatus(orderTrackingId)
-        if (status.status_code !== 0) break
+        if (isTerminal(status.status_code)) break
       }
     }
 
