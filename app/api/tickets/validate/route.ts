@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { requireAdmin, errorResponse } from '@/lib/api-utils'
+import { errorResponse } from '@/lib/api-utils'
 import { isValidObjectId } from '@/lib/validations'
 
 /**
  * GET /api/tickets/validate?id={ticketPurchaseId}
- * Admin-only endpoint — validates a ticket purchase by ID.
+ * Public endpoint — validates a ticket purchase by ID.
  * Returns ticket details, holder info, and current status.
  */
 export async function GET(request: Request) {
-  const { error } = await requireAdmin()
-  if (error) return error
-
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
 

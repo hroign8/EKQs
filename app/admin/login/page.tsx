@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Mail, Lock, Crown, Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react'
 import { signIn, useSession } from '@/lib/auth-client'
 import { isAdmin } from '@/types'
@@ -9,7 +9,12 @@ import { useEffect } from 'react'
 
 export default function AdminLoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: session, isPending: sessionPending } = useSession()
+
+  // Only allow same-origin relative redirects to prevent open-redirect attacks
+  const rawRedirect = searchParams.get('redirect') ?? ''
+  const safeRedirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/admin'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -24,7 +29,7 @@ export default function AdminLoginPage() {
   useEffect(() => {
     if (!sessionPending && session?.user) {
       if (isAdmin(session.user)) {
-        router.replace('/admin')
+        router.replace(safeRedirect)
       }
     }
   }, [session, sessionPending, router])
@@ -63,7 +68,7 @@ export default function AdminLoginPage() {
           }
         }
         // Use replace so the login page isn't in the back-button history
-        router.replace('/admin')
+        router.replace(safeRedirect)
         router.refresh()
       }
     } catch (err) {

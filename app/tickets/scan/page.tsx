@@ -2,7 +2,6 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useSession } from '@/lib/auth-client'
 import {
   CheckCircle2,
   XCircle,
@@ -33,7 +32,6 @@ interface ValidatedTicket {
 function ScanResult() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { data: session, isPending: sessionPending } = useSession()
   const [ticket, setTicket] = useState<ValidatedTicket | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -44,24 +42,6 @@ function ScanResult() {
     let cancelled = false
 
     async function run() {
-      // Defer all state updates to avoid synchronous-in-effect lint errors
-      await Promise.resolve()
-
-      if (sessionPending) return
-
-      if (!session?.user) {
-        router.push(`/admin/login?redirect=/tickets/scan?id=${id}`)
-        return
-      }
-
-      if (session.user.role !== 'admin') {
-        if (!cancelled) {
-          setError('Admin access required to validate tickets.')
-          setLoading(false)
-        }
-        return
-      }
-
       if (!id) {
         if (!cancelled) {
           setError('No ticket ID provided. Please scan a valid ticket QR code.')
@@ -89,9 +69,9 @@ function ScanResult() {
 
     run()
     return () => { cancelled = true }
-  }, [id, session, sessionPending, router])
+  }, [id])
 
-  if (sessionPending || (loading && !error)) {
+  if (loading && !error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
