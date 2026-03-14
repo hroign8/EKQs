@@ -1,6 +1,8 @@
 'use client'
 
-import { Crown, Star, Ticket, MapPin, Calendar, BadgeCheck, Clock, QrCode, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { Crown, Star, Ticket, MapPin, Calendar, BadgeCheck, Clock, QrCode, Trophy, X, ExternalLink } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import type { TicketEntry } from '@/types'
 
 interface TicketCardProps {
@@ -27,6 +29,13 @@ export default function TicketCard({
 }: TicketCardProps) {
   const isConfirmed = ticket.status === 'confirmed'
   const isPending = ticket.status === 'pending'
+  const [qrModalOpen, setQrModalOpen] = useState(false)
+
+  // Build the validation URL — works in browser only
+  const qrValue =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/tickets/scan?id=${ticket.id}`
+      : ticket.id
 
   // Tier-based styling
   const tierConfig: Record<string, {
@@ -101,7 +110,7 @@ export default function TicketCard({
         <div className="flex-1 px-4 sm:px-5 py-4">
           {/* Event name */}
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className={`w-3.5 h-3.5 ${tier.accent}`} />
+            <Trophy className={`w-3.5 h-3.5 ${tier.accent}`} />
             <p className="text-sm font-bold text-burgundy-900">{eventName}</p>
           </div>
 
@@ -159,21 +168,111 @@ export default function TicketCard({
 
         {/* QR Code stub */}
         <div className="hidden sm:flex w-28 flex-col items-center justify-center p-4">
-          <div className={`w-16 h-16 rounded-xl flex items-center justify-center transition-colors ${
-            isConfirmed
-              ? 'bg-burgundy-900 shadow-lg shadow-burgundy-900/20'
-              : 'bg-gray-200'
-          }`}>
-            <QrCode className={`w-10 h-10 ${isConfirmed ? 'text-gold-500' : 'text-gray-400'}`} />
-          </div>
-          <p className="text-[9px] text-gray-400 font-semibold mt-2 text-center uppercase tracking-wider">
-            {isConfirmed ? 'Show at Entry' : 'Awaiting Payment'}
-          </p>
-          <p className="text-[8px] text-gray-300 font-mono mt-0.5">
-            {ticket.id.slice(-8).toUpperCase()}
-          </p>
+          {isConfirmed ? (
+            <button
+              onClick={() => setQrModalOpen(true)}
+              aria-label="Enlarge QR code"
+              className="group flex flex-col items-center gap-2 focus:outline-none"
+            >
+              <div className="w-[72px] h-[72px] rounded-xl bg-white border-2 border-burgundy-900/20 p-1.5 shadow-md group-hover:shadow-lg group-hover:border-burgundy-900/40 transition-all">
+                <QRCodeSVG
+                  value={qrValue}
+                  size={56}
+                  fgColor="#4a0e1f"
+                  bgColor="#ffffff"
+                  level="M"
+                />
+              </div>
+              <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wider text-center leading-tight">
+                Show at Entry
+              </p>
+              <p className="text-[8px] text-gray-300 font-mono">
+                {ticket.id.slice(-8).toUpperCase()}
+              </p>
+            </button>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-[72px] h-[72px] rounded-xl bg-gray-100 flex items-center justify-center">
+                <QrCode className="w-10 h-10 text-gray-300" />
+              </div>
+              <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wider text-center">
+                {isPending ? 'Awaiting Payment' : 'Unavailable'}
+              </p>
+              <p className="text-[8px] text-gray-300 font-mono">
+                {ticket.id.slice(-8).toUpperCase()}
+              </p>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Mobile "Show QR" button — only for confirmed tickets */}
+      {isConfirmed && (
+        <div className="sm:hidden border-t border-dashed border-gray-200/80 mx-4 mb-3 pt-3 flex justify-center">
+          <button
+            onClick={() => setQrModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-burgundy-900 text-white text-xs font-semibold hover:bg-burgundy-800 transition-colors shadow-md shadow-burgundy-900/20"
+          >
+            <QrCode className="w-3.5 h-3.5" /> Show Entry QR Code
+          </button>
+        </div>
+      )}
+
+      {/* QR Modal */}
+      {qrModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Ticket QR Code"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setQrModalOpen(false)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-xs w-full flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setQrModalOpen(false)}
+              aria-label="Close QR code"
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-600" />
+            </button>
+
+            <div className="text-center">
+              <h3 className="text-base font-extrabold text-burgundy-900">{eventName}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{holderName} · {ticket.ticketName}</p>
+            </div>
+
+            <div className="bg-white border-2 border-burgundy-900/15 rounded-xl p-3 shadow-inner">
+              <QRCodeSVG
+                value={qrValue}
+                size={220}
+                fgColor="#4a0e1f"
+                bgColor="#ffffff"
+                level="M"
+                includeMargin={false}
+              />
+            </div>
+
+            <div className="text-center space-y-1">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                Present this QR at the entrance
+              </p>
+              <p className="text-[10px] text-gray-400 font-mono">{ticket.id.slice(-12).toUpperCase()}</p>
+            </div>
+
+            <a
+              href={qrValue}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-burgundy-700 hover:text-burgundy-900 font-medium transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" /> Open validation link
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
