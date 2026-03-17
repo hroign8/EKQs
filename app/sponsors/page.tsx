@@ -2,7 +2,6 @@ import {
   Crown,
   Globe,
   Megaphone,
-  Landmark,
   UtensilsCrossed,
   Users,
   GraduationCap,
@@ -40,7 +39,7 @@ const goldSponsors: SponsorItem[] = [
 
 const silverSponsors: SponsorItem[] = [
   { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services. The app allows users to book rides, access food delivery, and utilize a wallet system, with features like FarasMiles cashback. It can be reached via toll-free number 0800 344 440 or through their website.', imageSrc: '/faras_logo_gray-01.svg'},
-  { name: 'Nakfa Financial', description: 'Seamless remittance and banking for the diaspora.', icon: Landmark },
+  { name: 'Crown Studio', description: 'Crown Studio is a creative photography studio based at Kampala , Kabalagala Junction.  specializing in fashion, portraits, weddings, and events. Our studio offers a luxury creative space with a variety of premium Backgrounds designed for photography, video, Audio and media production. At Crown Studio, we work with models, brands, and creatives to capture elegant visuals and unforgettable moments — staying true to our promise: "Make Your Memories Perfect.', imageSrc: '/crown_studio_logo.svg', imageClassName: 'object-cover scale-110' },
   { name: 'Sembel Catering', description: 'Traditional and fusion Eritrean cuisine.', icon: UtensilsCrossed },
 ]
 
@@ -67,7 +66,7 @@ function SponsorRow({ sponsor }: { sponsor: SponsorItem }) {
   const Icon = sponsor.icon
   return (
     <div className="flex items-start gap-4">
-      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border-2 border-burgundy-900 p-1">
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white border-2 border-burgundy-900 ${sponsor.imageSrc ? '' : 'p-1'}`}>
         {sponsor.imageSrc ? (
           <Image
             src={sponsor.imageSrc}
