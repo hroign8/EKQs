@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Edit, Trash2, EyeOff, Eye, Ticket, Crown, Star, DollarSign, Users, RefreshCw, Clock, BadgeCheck, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, EyeOff, Eye, Ticket, Crown, Star, DollarSign, Users, RefreshCw, Clock, BadgeCheck, XCircle, Download } from 'lucide-react'
 import type { AdminTicketType, TicketPurchaseEntry } from '../types'
 
 interface TicketsTabProps {
@@ -25,6 +25,30 @@ const STATUS_BADGES: Record<string, { bg: string; text: string; Icon: typeof Bad
   pending: { bg: 'bg-yellow-50', text: 'text-yellow-700', Icon: Clock },
   failed: { bg: 'bg-red-50', text: 'text-red-700', Icon: XCircle },
   expired: { bg: 'bg-gray-50', text: 'text-gray-500', Icon: Clock },
+}
+
+function exportPurchasesCSV(purchases: TicketPurchaseEntry[]) {
+  const headers = ['Name', 'Email', 'Ticket Type', 'Qty', 'Amount (USD)', 'Status', 'Transaction ID', 'Date']
+  const rows = purchases.map((p) => [
+    p.userName,
+    p.userEmail,
+    p.ticketType,
+    p.quantity,
+    p.totalAmount.toFixed(2),
+    p.status,
+    p.transactionId ?? '',
+    new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  ])
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `ticket-purchases-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 export default function TicketsTab({
@@ -251,6 +275,17 @@ export default function TicketsTab({
       {/* Ticket Purchases Table */}
       {view === 'purchases' && (
         <div className="bg-white rounded-2xl overflow-hidden">
+          {ticketPurchasesList.length > 0 && (
+            <div className="px-4 sm:px-6 py-3 border-b border-gray-100 flex justify-end">
+              <button
+                onClick={() => exportPurchasesCSV(ticketPurchasesList)}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+            </div>
+          )}
           <div className="overflow-x-auto">
             {ticketPurchasesList.length === 0 ? (
               <div className="p-12 text-center">
