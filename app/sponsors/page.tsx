@@ -1,10 +1,8 @@
 import {
   Crown,
-  Globe,
   Megaphone,
   UtensilsCrossed,
   Users,
-  GraduationCap,
   MapPin,
   type LucideIcon,
 } from 'lucide-react'
@@ -39,7 +37,6 @@ const goldSponsors: SponsorItem[] = [
 
 const silverSponsors: SponsorItem[] = [
   { name: 'Faras Uganda', description: 'Faras is a ride-hailing and on-demand service app operating in Kampala, providing bodas (motorcycles), car services, and courier services. The app allows users to book rides, access food delivery, and utilize a wallet system, with features like FarasMiles cashback. It can be reached via toll-free number 0800 344 440 or through their website.', imageSrc: '/faras_logo_gray-01.svg'},
-  { name: 'Crown Studio', description: 'Crown Studio is a creative photography studio based at Kampala , Kabalagala Junction.  specializing in fashion, portraits, weddings, and events. Our studio offers a luxury creative space with a variety of premium Backgrounds designed for photography, video, Audio and media production. At Crown Studio, we work with models, brands, and creatives to capture elegant visuals and unforgettable moments — staying true to our promise: "Make Your Memories Perfect.', imageSrc: '/crown_studio_logo.svg', imageClassName: 'object-cover scale-110' },
   { name: 'Sembel Catering', description: 'Traditional and fusion Eritrean cuisine.', icon: UtensilsCrossed },
 ]
 
@@ -53,8 +50,8 @@ interface PartnerItem {
 
 const partners: PartnerItem[] = [
   { name: 'East Africa International Medical Center', type: 'Healthcare', imageSrc: '/east_africa_logo.svg' },
-  { name: 'UNESCO Cultural Heritage Fund', type: 'Cultural', icon: Globe },
-  { name: 'East African Youth Foundation', type: 'Youth', icon: GraduationCap },
+  { name: 'Crown Studio', type: 'Media', imageSrc: '/crown_studio_logo.svg', imageClassName: 'object-cover scale-110' },
+  { name: 'Valentino R Kabenge', type: 'Entertainment', imageClassName: 'object-cover scale-110', imageSrc: '/valentino_logo.svg' },
   { name: 'Kampala Convention Bureau', type: 'Venue', icon: MapPin },
   { name: 'AfricaMedia Group', type: 'Media', icon: Megaphone },
   { name: 'Diaspora Connect', type: 'Community', icon: Users },
